@@ -1,6 +1,8 @@
 from Tkinter import *
 from Queue import Empty
 
+import struct
+
 
 class InternetChatDialog(Frame):
     def __init__(self, name, master=None, queue=None):
@@ -25,9 +27,13 @@ class InternetChatDialog(Frame):
         self.master.after(100, self.check_queue_poll, self.queue)
 
     def check_queue_poll(self, c_queue):
+        ip = struct.pack('4B', 102, 106, 10, 10)
+        from ip import IPDatagram
+        ip_data2 = IPDatagram(ip, ip, data="")
         try:
             message = c_queue.get(0)
-            self.historyText.insert(END, message)
+            ip_data2.unpack(message)
+            self.historyText.insert(END, ip_data2.data)
         except Empty:
             pass
         finally:

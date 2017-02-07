@@ -1,6 +1,9 @@
 from Tkinter import *
 import Tkinter as tK
 
+import struct
+
+from ip import IPDatagram
 from router import Router
 from window import InternetChatDialog
 import multiprocessing
@@ -72,8 +75,15 @@ class RouterCreator(Frame):
 
 
 def put_message_queue(queue, message):
+    ip = struct.pack('4B', 101, 104, 10, 10)
+    print "-------------------ip_data---b-----------------"
+    ip_data = IPDatagram(ip, ip, data=str(message))
+    print "-------------------ip_data---a-----------------"
+    print ip_data.__repr__()
+    message = ip_data.pack()
+    print message
     queue.put(message)
-    sleep(0.001)  # Besides, the time needed to route packets from one node to another should not be zero.
+    # sleep(0.001)  # Besides, the time needed to route packets from one node to another should not be zero.
 
 
 if __name__ == "__main__":
