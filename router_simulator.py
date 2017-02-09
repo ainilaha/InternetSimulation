@@ -5,6 +5,11 @@ import time
 from enum import Enum
 from Queue import Empty
 
+from netaddr import IPAddress
+
+from mac_table import MACTable
+from routing_table import RoutingTable
+
 '''
 Interface class simulated an interface of a router. Each interface hold a send out queue to address packets.
 However, there is no receive queue in an interface since all received packets will go to the total queue
@@ -28,6 +33,7 @@ class Interface:
         self.IP = "0.0.0.0"
         self.STATE = State.AVAIlIBBIE
         self.send_queue = multiprocessing.Queue()
+        self.receive_queue = multiprocessing.Queue()
 
     # this method will convert Mac address to convention format eg
     # eg ec-17-2f-47-82-6c
@@ -51,6 +57,11 @@ class Interface:
             except Empty:
                 pass
 
+'''
+RouterSimulator class simulated an Router in simple way.
+
+'''
+
 
 class RouterSimulator:
     def __init__(self, name):
@@ -60,7 +71,9 @@ class RouterSimulator:
         self.message_content = ""
         self.chat_window = None
         self.received_data_queue = multiprocessing.Queue()
-        self.route_table = []
+        self.received_arp_queue = multiprocessing.Queue()
+        self.route_table = RoutingTable()
+        self.mac_table = MACTable()
 
     def initialize_router(self):
         int_name_list = "faster 0/0", "faster 1/1", "ser 0/0", "ser 0/1"
@@ -87,6 +100,16 @@ class RouterSimulator:
         for port in self.intList:
             print port.name + " : " + str(port.type) + " : " + port.IP + " : " + port.mac + "\n"
             print "----------------------------------------\n"
+
+    def reply_arp(self):
+        print "reply an ARP request if it's match"
+        for inter in self.intList:
+            for arp_packet in self.received_arp_queue:
+                if IPAddress(arp_packet.tha) == IPAddress(inter.IP):
+                    arp_packet.arp_sha = inter.mac
+                    print "send back arp packet"
+
+
 
     def message_port(self, conn):
         conn.send(self.name + ":" + self.message_content)

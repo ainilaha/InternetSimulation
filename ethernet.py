@@ -58,5 +58,7 @@ if __name__ == "__main__":
     print unpack('!6B', test_mac)
     e = EthernetFrame(test_mac, test_mac, data="test data Frame")
     print e.__repr__()
-
-    print e.pack()
+    test_mac = struct.pack('!6B',
+                           int('7b', 16), int('4c', 16), int('95', 16),
+                           int('23', 16), int('e8', 16), int('88', 16))
+    print e._eth_addr(test_mac)
