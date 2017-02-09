@@ -1,18 +1,33 @@
+import multiprocessing
 import os
-import random
+import binascii
+import time
+from enum import Enum
+from Queue import Empty
 
-###########################################################
-# This class simulated network interfaces of routers
-#
-###########################################################
+'''
+Interface class simulated an interface of a router. Each interface hold a send out queue to address packets.
+However, there is no receive queue in an interface since all received packets will go to the total queue
+in the router.
+Note: Here I am using a state control variable to simulated an interface interrupt in real OS
+
+'''
+
+
+class State(Enum):
+    BESSY = 0
+    AVAIlIBBIE = 1
+    NO_CONNECTED = 2
 
 
 class Interface:
     def __init__(self):
-        self.type = "empty type"  # faster 0  ser 1
-        self.name = "empty name"  # faster 0/0, faster 1/1, ser 0/0, ser 0/1
+        self.type = 0  # faster 0  ser 1
+        self.name = ""  # faster 0/0, faster 1/1, ser 0/0, ser 0/1
         self.mac = ""
         self.IP = "0.0.0.0"
+        self.STATE = State.AVAIlIBBIE
+        self.send_queue = multiprocessing.Queue()
 
     # this method will convert Mac address to convention format eg
     # eg ec-17-2f-47-82-6c
@@ -27,21 +42,31 @@ class Interface:
     def set_mac(self, string):
         self.mac = self.insert_dash(string)
 
+    def send(self, tcode=0x0806):
+        while True:
+            time.sleep(0.001)
+            try:
+                packet = self.send_queue.get(0)
+                print "call ARP or IP and send packets out" + packet
+            except Empty:
+                pass
 
-class Router:
+
+class RouterSimulator:
     def __init__(self, name):
         self.intList = []
         self.name = name
         self.initialize_router()
         self.message_content = ""
         self.chat_window = None
+        self.received_data_queue = multiprocessing.Queue()
+        self.route_table = []
 
     def initialize_router(self):
         int_name_list = "faster 0/0", "faster 1/1", "ser 0/0", "ser 0/1"
         int_type_list = (1, 1, 0, 0)
         for i in range(0, 4):  # each router equiped with four ports
-            mac = random.getrandbits(48)  # random generate 48-bit Mac Address
-            mac = str(hex(mac))[3:]  # format mac as hex and discard hex prefix 0x to convenient to observed
+            mac = binascii.b2a_hex(os.urandom(6))  # random generate 48-bit Mac Address presented by 12 hex numbers
             interface = Interface()
             interface.set_mac(mac)
             interface.name = int_name_list[i]
@@ -55,7 +80,7 @@ class Router:
             os.remove(config_file)
         conf_file = open(config_file, 'a+')  # Trying to create a new file or open one
         for port in self.intList:
-            conf_file.write(port.name + " : " + str(port.type) + " : "+ port.IP + " : " + port.mac + "\n")
+            conf_file.write(port.name + " : " + str(port.type) + " : " + port.IP + " : " + port.mac + "\n")
         conf_file.close()
 
     def show_config(self):
@@ -72,4 +97,5 @@ class Router:
 
 
 if __name__ == "__main__":
-    router = Router("Router")
+    router = RouterSimulator("Router")
+    router.initialize_router()

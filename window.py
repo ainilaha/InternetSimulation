@@ -40,5 +40,5 @@ class InternetChatDialog(Frame):
             self.master.after(100, self.check_queue_poll, c_queue)
 
     def set_target_index(self, i):
-        print "Try to connect Router" + str(i)
+        print "Try to connect Router" + str(i+1)
         self.target_index = i

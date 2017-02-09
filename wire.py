@@ -3,7 +3,7 @@
 ################################################
 from multiprocessing import Process, Pipe
 
-from router import Router
+from router_simulator import RouterSimulator
 
 
 class Wire:
@@ -25,6 +25,6 @@ class Wire:
 
 if __name__ == "__main__":
     wire = Wire()
-    sourceRouter = Router("R1")
-    destinationRouter = Router("R2")
+    sourceRouter = RouterSimulator("R1")
+    destinationRouter = RouterSimulator("R2")
     wire.create_wire(sourceRouter, destinationRouter)

@@ -1,6 +1,6 @@
 import menu
 
-from router import Router
+from router_simulator import RouterSimulator
 
 
 class ConfigMenu:
@@ -11,7 +11,7 @@ class ConfigMenu:
     def create_routers(self):
         i = 1
         while i < 6:
-            router = Router("Router" + str(i))
+            router = RouterSimulator("Router" + str(i))
             i += 1
             router.show_config()
             self.routerConfigList.append(router)

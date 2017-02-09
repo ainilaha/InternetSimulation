@@ -4,7 +4,7 @@ import Tkinter as tK
 import struct
 
 from ip import IPDatagram
-from router import Router
+from router_simulator import RouterSimulator
 from window import InternetChatDialog
 import multiprocessing
 from functools import partial
@@ -67,7 +67,7 @@ class RouterCreator(Frame):
             queue = multiprocessing.Queue()
             queue.cancel_join_thread()  # or else thread that puts data will not term
             app = ChatWindow.create_chat_window("Router" + str(self.no_router), self.no_router, queue)
-            router = Router("Router" + str(self.no_router))
+            router = RouterSimulator("Router" + str(self.no_router))
             router.chat_window = app
             router_list.append(router)
             self.no_router += 1

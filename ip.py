@@ -127,6 +127,6 @@ if __name__ == "__main__":
     print ip_packets
     print "------------ip2------------------"
     ip = struct.pack('4B', 102, 106, 10, 10)
-    ip_data2 = IPDatagram(ip, ip, data="")
+    ip_data2 = IPDatagram("", "", data="")
     ip_data2.unpack(ip_packets)
     print ip_data2.__repr__()
