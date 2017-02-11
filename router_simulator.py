@@ -8,7 +8,7 @@ from multiprocessing import Process
 import struct
 from enum import Enum
 from Queue import Empty
-
+from logger import get_logger
 from netaddr import EUI
 from netaddr import IPAddress
 
@@ -79,13 +79,11 @@ class RouterSimulator(Process):
         self.route_table = []
         self.mac_table = []
         self.initialize_router()
-        self.process_manager = multiprocessing.Manager()
-        self.received_packets_data_queue = self.process_manager.Queue()
-        self.received_frame_data_queue = self.process_manager.Queue()
-        self.pool = multiprocessing.Pool()
+        self.received_packets_data_queue = multiprocessing.Queue()
+        self.received_frame_data_queue = multiprocessing.Queue()
         # self.arp = self.pool.apply_async(self.reply_arp, ())  # start arp request listening
-        self.t = threading.Thread(target=self.reply_arp)
-        self.t.start()
+        self.arp = threading.Thread(target=self.reply_arp)
+        self.arp.start()
 
     def initialize_router(self):
         int_name_list = "faster 0/0", "faster 1/1", "ser 0/0", "ser 0/1"
@@ -115,32 +113,29 @@ class RouterSimulator(Process):
 
     def reply_arp(self):
         print "Listening ARP.... "
-        time.sleep(1)
+        time.sleep(0.1)
         arp_frame = EthernetFrame(dest_mac="", src_mac="")
+        arp_packet = ARPPacket(sha="", tha="", spa="")
         while True:
             try:
-                arp_frame_raw = self.received_frame_data_queue.get(0)
+                arp_frame_raw = self.received_frame_data_queue.get()
                 arp_frame.unpack(arp_frame_raw)
                 print "from func:"+arp_frame.__repr__()
-                arp_packet = arp_frame.data
+                arp_packet.unpack(arp_frame.data)
+                print "from func++:" + arp_packet.__repr__()
+                # arp_packet = arp_frame.data
                 for inter in self.intList:
-                    if IPAddress(arp_packet.tha) == IPAddress(inter.IP):
+                    if IPAddress(arp_packet.tpa) == IPAddress(inter.IP):
                         arp_packet.arp_sha = inter.mac
                         for mac_row in self.mac_table:
                             if EUI(mac_row.mac) == EUI(arp_frame.eth_src_addr):
-                                mac_row.interface.receive_queue.put(arp_packet)
+                                mac_row.interface.receive_queue.put(arp_packet.pack())
             except Empty:
                 pass
             finally:
                 self.reply_arp()
 
 
-def message_port(self, conn):
-    conn.send(self.name + ":" + self.message_content)
-    message = conn.recv()
-    print message + "\n"
-    conn.close()
-    return message
 
 
 def main():
@@ -151,14 +146,17 @@ def main():
                       int('FF', 16), int('FF', 16), int('FF', 16),
                       int('FF', 16), int('FF', 16), int('FF', 16))
     ip = struct.pack('4B', 101, 104, 10, 10)
-
     router = RouterSimulator("Router")
-    arp_packet = ARPPacket(sha=test_mac, tha=tha, spa=ip)
+    arp_packet = ARPPacket(sha=test_mac, spa=ip, tha=tha, tpa=ip)
+    print arp_packet.__repr__()
     e = EthernetFrame(test_mac, test_mac,tcode=0x0806,data=arp_packet.pack())
     print e.__repr__()
     router.received_frame_data_queue.put(e.pack())
-    print "dddddddddddddddddddd"
-    router.t.join()
+    router.received_frame_data_queue.put(e.pack())
+    router.received_frame_data_queue.put(e.pack())
+    time.sleep(15)
+    router.received_frame_data_queue.put(e.pack())
+    router.arp.join()
 
 
 if __name__ == "__main__":
