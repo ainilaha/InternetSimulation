@@ -1,14 +1,19 @@
 import multiprocessing
 import os
 import binascii
+import threading
 import time
+from multiprocessing import Process
+
+import struct
 from enum import Enum
 from Queue import Empty
 
+from netaddr import EUI
 from netaddr import IPAddress
 
-from mac_table import MACTable
-from routing_table import RoutingTable
+from arp import ARPPacket
+from ethernet import EthernetFrame
 
 '''
 Interface class simulated an interface of a router. Each interface hold a send out queue to address packets.
@@ -57,23 +62,30 @@ class Interface:
             except Empty:
                 pass
 
+
 '''
 RouterSimulator class simulated an Router in simple way.
 
 '''
 
 
-class RouterSimulator:
+class RouterSimulator(Process):
     def __init__(self, name):
         self.intList = []
         self.name = name
         self.initialize_router()
         self.message_content = ""
         self.chat_window = None
-        self.received_data_queue = multiprocessing.Queue()
-        self.received_arp_queue = multiprocessing.Queue()
-        self.route_table = RoutingTable()
-        self.mac_table = MACTable()
+        self.route_table = []
+        self.mac_table = []
+        self.initialize_router()
+        self.process_manager = multiprocessing.Manager()
+        self.received_packets_data_queue = self.process_manager.Queue()
+        self.received_frame_data_queue = self.process_manager.Queue()
+        self.pool = multiprocessing.Pool()
+        # self.arp = self.pool.apply_async(self.reply_arp, ())  # start arp request listening
+        self.t = threading.Thread(target=self.reply_arp)
+        self.t.start()
 
     def initialize_router(self):
         int_name_list = "faster 0/0", "faster 1/1", "ser 0/0", "ser 0/1"
@@ -102,23 +114,52 @@ class RouterSimulator:
             print "----------------------------------------\n"
 
     def reply_arp(self):
-        print "reply an ARP request if it's match"
-        for inter in self.intList:
-            for arp_packet in self.received_arp_queue:
-                if IPAddress(arp_packet.tha) == IPAddress(inter.IP):
-                    arp_packet.arp_sha = inter.mac
-                    print "send back arp packet"
+        print "Listening ARP.... "
+        time.sleep(1)
+        arp_frame = EthernetFrame(dest_mac="", src_mac="")
+        while True:
+            try:
+                arp_frame_raw = self.received_frame_data_queue.get(0)
+                arp_frame.unpack(arp_frame_raw)
+                print "from func:"+arp_frame.__repr__()
+                arp_packet = arp_frame.data
+                for inter in self.intList:
+                    if IPAddress(arp_packet.tha) == IPAddress(inter.IP):
+                        arp_packet.arp_sha = inter.mac
+                        for mac_row in self.mac_table:
+                            if EUI(mac_row.mac) == EUI(arp_frame.eth_src_addr):
+                                mac_row.interface.receive_queue.put(arp_packet)
+            except Empty:
+                pass
+            finally:
+                self.reply_arp()
 
 
+def message_port(self, conn):
+    conn.send(self.name + ":" + self.message_content)
+    message = conn.recv()
+    print message + "\n"
+    conn.close()
+    return message
 
-    def message_port(self, conn):
-        conn.send(self.name + ":" + self.message_content)
-        message = conn.recv()
-        print message + "\n"
-        conn.close()
-        return message
+
+def main():
+    test_mac = struct.pack('!6B',
+                           int('7b', 16), int('4c', 16), int('95', 16),
+                           int('23', 16), int('e8', 16), int('89', 16))
+    tha = struct.pack('!6B',
+                      int('FF', 16), int('FF', 16), int('FF', 16),
+                      int('FF', 16), int('FF', 16), int('FF', 16))
+    ip = struct.pack('4B', 101, 104, 10, 10)
+
+    router = RouterSimulator("Router")
+    arp_packet = ARPPacket(sha=test_mac, tha=tha, spa=ip)
+    e = EthernetFrame(test_mac, test_mac,tcode=0x0806,data=arp_packet.pack())
+    print e.__repr__()
+    router.received_frame_data_queue.put(e.pack())
+    print "dddddddddddddddddddd"
+    router.t.join()
 
 
 if __name__ == "__main__":
-    router = RouterSimulator("Router")
-    router.initialize_router()
+    main()
