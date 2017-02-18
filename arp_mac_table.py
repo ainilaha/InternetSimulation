@@ -34,11 +34,12 @@ Total Mac Addresses for this criterion: 2
 
 
 class ARPnMACRow:
-    def __init__(self, ip_addr, mac, mac_type, age=-1):
+    def __init__(self, ip_addr, mac, mac_type, inter_name, age=-1):
         self.ip_addr = ip_addr
         self.mac = mac
         self.mac_type = mac_type  # Dynamic:0  or Static:1
         self.age = age  # minutes  -1 is static ( or permanent)
+        self.inter_name = inter_name
 
 
 class ARPnMACTable:
@@ -67,21 +68,10 @@ class ARPnMACTable:
                 return mac_row
         return None
 
-    def update_mac(self, mac, dest_ip):
-        print "--------------update_mac--------------------"+ str(len(self.router_list))
-        for router in self.router_list:
-            print "--------------update_mac----router name=" + router.name
-            for inter in router.intList:
-                print "--------------update_mac----inter name=" + inter.name
-                if EUI(inter.mac) == EUI(mac):
-                    print "--------------update_mac----inter mac=" + inter.mac
-                    print "--------------update_mac----add mac=" + str(EUI(mac))
-                    mac_row = ARPnMACRow(ip_addr=str(socket.inet_ntoa(dest_ip)), mac=str(EUI(mac)),  mac_type=0, age=5)
-                    print "--------------update_mac----33mac=" + mac_row.mac
-                    mac_row.interface = inter
-                    print "--------------update_mac----interface=" + mac_row.interface.name
-                    self.mac_table.append(mac_row)
-                    break
+    def update_mac(self, mac, dest_ip, inter_name):
+        mac_row = ARPnMACRow(ip_addr=str(socket.inet_ntoa(dest_ip)), mac=str(EUI(mac)),
+                             inter_name=inter_name, mac_type=0, age=5)
+        self.mac_table.append(mac_row)
         self.show_table()
 
     @staticmethod
@@ -94,7 +84,7 @@ class ARPnMACTable:
 
     def show_table(self):
         for mac_row in self.mac_table:
-            print"%s : %s : %s : %d : %d " % (mac_row.ip_addr,mac_row.interface.name,
+            print"%s : %s : %s : %d : %d " % (mac_row.ip_addr, mac_row.inter_name,
                                               mac_row.mac, mac_row.mac_type, mac_row.age)
 
     def save_table(self, mac_config_path):
@@ -107,16 +97,13 @@ class ARPnMACTable:
             conf_file.write(line)
         conf_file.close()
 
-    def load_table_config(self, mac_config_path, int_list):
+    def load_table_config(self, mac_config_path):
         if os.path.exists(mac_config_path):
             config_file = open(mac_config_path, "r")
             for line in config_file.readlines():
                 line = line.split(":")
                 mac_row = ARPnMACRow(ip_addr=line[0].strip(), mac=line[1].strip(), mac_type=int(line[3].strip()),
-                                     age=int(line[4].strip()))
-                for inter in int_list:
-                    if str(line[2].strip()) == inter.name:
-                        mac_row.interface = inter
+                                     inter_name=line[2].strip(), age=int(line[4].strip()))
                 self.mac_table.append(mac_row)
 
 if __name__ == "__main__":

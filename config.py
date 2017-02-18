@@ -1,7 +1,7 @@
 import menu
 import struct
 
-from arp_mac_table import ARPnMACTable, ARPnMACRow
+from arp_mac_table import ARPnMACTable
 from ethernet import EthernetFrame
 from ip import IPDatagram
 from router_simulator import RouterSimulator
@@ -15,7 +15,7 @@ class ConfigMenu:
 
     def create_routers(self):
         i = 1
-        while i < 6:
+        while i < 3:
             router_simulator = RouterSimulator("Router" + str(i))
             i += 1
             router_simulator.show_config()
@@ -83,3 +83,4 @@ if __name__ == "__main__":
         router.receive.join()
         router.routing_packets.join()
         router.interface.send_thread.join()
+        router.interface.receiving.join()

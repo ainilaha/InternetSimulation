@@ -22,11 +22,9 @@ class RoutingRow:
     def __init__(self, dest_ip, inter_ip, mask="255.255.255.0"):
         self.dest_ip = dest_ip
         self.net_mask = mask
-        self.gateway = "0.0.0.0"
+        self.gateway = "0.0.0.0"  # gateway IP or connected
         self.inter_ip = inter_ip  # an ip address or name of interface
-        print self.inter_ip
-        self.inter = None
-        self.matrix = 0  # hops
+        self.metric = 0  # hops
 
 
 class RoutingTable:
@@ -41,7 +39,7 @@ class RoutingTable:
         print "---------------------------------------------------------------"
         print self.table
         for router_row in self.table:
-            print "dest_ip:s%, mask:%s , inter_ip:%s" % (router_row.dest_ip, router_row.net_mask,router_row.inter_ip)
+            print "dest_ip:s%, mask:%s , inter_ip:%s" % (router_row.dest_ip, router_row.net_mask, router_row.inter_ip)
 
     '''
      This method will return the longest match network interface.
@@ -59,10 +57,12 @@ class RoutingTable:
         common_bits = [(IPAddress(self.get_network_id(routing_row)) &
                         ip_address).bits() for routing_row in match_interface_list]
         common_bit_counts = [bits.count('1') for bits in common_bits]
-        print common_bits
-        max_index = common_bit_counts.index(max(common_bit_counts))
-        print "max_index=" + str(max_index)
-        return match_interface_list[max_index].inter_ip
+        if len(common_bit_counts) > 0:
+            max_index = common_bit_counts.index(max(common_bit_counts))
+            print "max_index=" + str(max_index)
+            return match_interface_list[max_index].inter_ip
+        else:
+            return  None
 
 
 if __name__ == "__main__":
