@@ -54,7 +54,7 @@ class SocketSimulator:
         return arp_packet.arp_sha
 
     # send ARP request
-    def send(self, packet):
+    def send_arp(self, packet):
         print "send according destination address of " + packet
         for interface in self.host.intList:
             interface.receive_queue.put(packet)

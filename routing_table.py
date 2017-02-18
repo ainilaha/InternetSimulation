@@ -19,11 +19,13 @@ from netaddr import IPNetwork
 
 
 class RoutingRow:
-    def __init__(self, int_ip, mask="255.255.255.0"):
-        self.destination = ""
+    def __init__(self, dest_ip, inter_ip, mask="255.255.255.0"):
+        self.dest_ip = dest_ip
         self.net_mask = mask
         self.gateway = "0.0.0.0"
-        self.interface = int_ip  # an ip address or name of interface
+        self.inter_ip = inter_ip  # an ip address or name of interface
+        print self.inter_ip
+        self.inter = None
         self.matrix = 0  # hops
 
 
@@ -33,7 +35,13 @@ class RoutingTable:
 
     @staticmethod
     def get_network_id(routing_row):
-        return IPNetwork(routing_row.interface + "/" + routing_row.net_mask).cidr
+        return IPNetwork(routing_row.inter_ip + "/" + routing_row.net_mask).cidr
+
+    def show_table(self):
+        print "---------------------------------------------------------------"
+        print self.table
+        for router_row in self.table:
+            print "dest_ip:s%, mask:%s , inter_ip:%s" % (router_row.dest_ip, router_row.net_mask,router_row.inter_ip)
 
     '''
      This method will return the longest match network interface.
@@ -51,16 +59,17 @@ class RoutingTable:
         common_bits = [(IPAddress(self.get_network_id(routing_row)) &
                         ip_address).bits() for routing_row in match_interface_list]
         common_bit_counts = [bits.count('1') for bits in common_bits]
-        max_index = common_bit_counts.index(6)
-        return match_interface_list[max_index]
+        print common_bits
+        max_index = common_bit_counts.index(max(common_bit_counts))
+        print "max_index=" + str(max_index)
+        return match_interface_list[max_index].inter_ip
 
 
 if __name__ == "__main__":
-    rt1 = RoutingRow("10.10.10.9", "255.255.252.0")
-    rt2 = RoutingRow("10.10.10.11", "255.255.255.0")
-    print RoutingTable.get_network_id(rt1)
-    print RoutingTable.get_network_id(rt2)
+    rt1 = RoutingRow("10.10.10.9", "10.10.10.11")
+    rt2 = RoutingRow("10.10.10.11", "10.10.10.10")
+
     rb = RoutingTable()
     rb.table.append(rt1)
     rb.table.append(rt2)
-    print "longest match:", rb.find_longest_match_network("10.10.10.10").interface
+    print "longest match:", rb.find_longest_match_network("10.10.10.10")

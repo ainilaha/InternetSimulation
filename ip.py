@@ -130,3 +130,6 @@ if __name__ == "__main__":
     ip_data2 = IPDatagram("", "", data="")
     ip_data2.unpack(ip_packets)
     print ip_data2.__repr__()
+    ip_pack = struct.unpack('4B', ip_data2.ip_dest_addr)
+    print "ip=" +socket.inet_ntoa(ip_data2.ip_dest_addr)
+   # print "spocket:"+socket.inet_ntoa(ip_data2.ip_dest_addr)

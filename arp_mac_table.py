@@ -1,7 +1,10 @@
 import os
+import socket
 
+import struct
 from netaddr import EUI
 from netaddr import IPAddress
+
 
 '''
 ARPnMACTable simulated an MAC table and ARP cache table
@@ -33,7 +36,6 @@ Total Mac Addresses for this criterion: 2
 class ARPnMACRow:
     def __init__(self, ip_addr, mac, mac_type, age=-1):
         self.ip_addr = ip_addr
-        self.interface = None
         self.mac = mac
         self.mac_type = mac_type  # Dynamic:0  or Static:1
         self.age = age  # minutes  -1 is static ( or permanent)
@@ -42,6 +44,7 @@ class ARPnMACRow:
 class ARPnMACTable:
     def __init__(self):
         self.mac_table = []
+        self.router_list = []
 
     '''
     Only same MAC or broadcast address considered as matched addresses
@@ -56,15 +59,43 @@ class ARPnMACTable:
                 return False
 
     def get_mac_from_table(self, dest_ip):
+        dest_ip = str(socket.inet_ntoa(dest_ip))
+        print "--------------get_mac_from_table--------------------"
         for mac_row in self.mac_table:
+            print str(IPAddress(mac_row.ip_addr)) + ":" + mac_row.mac + " : " + str(IPAddress(dest_ip))
             if IPAddress(mac_row.ip_addr) == IPAddress(dest_ip):
                 return mac_row
         return None
 
+    def update_mac(self, mac, dest_ip):
+        print "--------------update_mac--------------------"+ str(len(self.router_list))
+        for router in self.router_list:
+            print "--------------update_mac----router name=" + router.name
+            for inter in router.intList:
+                print "--------------update_mac----inter name=" + inter.name
+                if EUI(inter.mac) == EUI(mac):
+                    print "--------------update_mac----inter mac=" + inter.mac
+                    print "--------------update_mac----add mac=" + str(EUI(mac))
+                    mac_row = ARPnMACRow(ip_addr=str(socket.inet_ntoa(dest_ip)), mac=str(EUI(mac)),  mac_type=0, age=5)
+                    print "--------------update_mac----33mac=" + mac_row.mac
+                    mac_row.interface = inter
+                    print "--------------update_mac----interface=" + mac_row.interface.name
+                    self.mac_table.append(mac_row)
+                    break
+        self.show_table()
+
+    @staticmethod
+    def get_mac_pack(mac):
+        mac = mac.split("-")
+        mac_puck = struct.pack('!6B', int(str(mac[0]).strip(), 16), int(str(mac[1]).strip(), 16),
+                               int(str(mac[2]).strip(), 16), int(str(mac[3]).strip(), 16),
+                               int(str(mac[4]).strip(), 16), int(str(mac[5]).strip(), 16))
+        return mac_puck
+
     def show_table(self):
         for mac_row in self.mac_table:
-            print"%s : %s : %s : %d : %d " % (mac_row.ip_addr, mac_row.mac,
-                                              mac_row.interface.name, mac_row.mac_type, mac_row.age)
+            print"%s : %s : %s : %d : %d " % (mac_row.ip_addr,mac_row.interface.name,
+                                              mac_row.mac, mac_row.mac_type, mac_row.age)
 
     def save_table(self, mac_config_path):
         if os.path.exists(mac_config_path):
@@ -91,10 +122,14 @@ class ARPnMACTable:
 if __name__ == "__main__":
     print type(EUI("00-1B-77-49-54-FD").bin)
     mt = ARPnMACTable()
-    mr1 = ARPnMACRow("1.1.1.1", "00-1B-77-49-54-F2", "Static")
-    mr2 = ARPnMACRow("1.1.1.2", "00:1B:77:49:54:FD", "Dynamic")
-    mr3 = ARPnMACRow("1.1.1.3", "00-1B-77-49-54-FF", "Static")
+    mr1 = ARPnMACRow("1.1.1.1", "00-1B-77-49-54-F2", 1)
+
+    mr2 = ARPnMACRow("1.1.1.2", "00:1B:77:49:54:FD", 1)
+
+    mr3 = ARPnMACRow("1.1.1.3", "00-1B-77-49-54-FF", 1)
+
     mt.mac_table.append(mr1)
     mt.mac_table.append(mr2)
     mt.mac_table.append(mr3)
+    mt.show_table()
 

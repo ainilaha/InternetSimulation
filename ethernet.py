@@ -2,6 +2,8 @@ from struct import pack, unpack, calcsize
 
 import struct
 
+from netaddr import EUI
+
 ETH_HDR_FMT = '!6s6sH'
 
 '''
@@ -18,11 +20,11 @@ class EthernetFrame:
         self.data = data
 
     def __repr__(self):
-        repr = ('EthFrame: ' +
+        repr = ('EthernetFrame: ' +
                 '[dest_mac: %s, src_mac: %s, tcode: 0x%04x,' +
                 ' len(data): %d]') \
-               % (self._eth_addr(self.eth_dest_addr),
-                  self._eth_addr(self.eth_src_addr),
+               % (self.eth_addr(self.eth_dest_addr),
+                  self.eth_addr(self.eth_src_addr),
                   self.eth_tcode, len(self.data))
         return repr
 
@@ -42,7 +44,8 @@ class EthernetFrame:
         self.eth_tcode = eth_fields[2]
         self.data = eth_frame[hdr_len:]
 
-    def _eth_addr(self, raw):
+    @staticmethod
+    def eth_addr(raw):
         hex = '%.2x:%.2x:%.2x:%.2x:%.2x:%.2x' \
               % (ord(raw[0]), ord(raw[1]), ord(raw[2]),
                  ord(raw[3]), ord(raw[4]), ord(raw[5]))
@@ -61,4 +64,4 @@ if __name__ == "__main__":
     test_mac = struct.pack('!6B',
                            int('7b', 16), int('4c', 16), int('95', 16),
                            int('23', 16), int('e8', 16), int('88', 16))
-    print e._eth_addr(test_mac)
+    print EUI(e.eth_addr(test_mac))

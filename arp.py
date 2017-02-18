@@ -16,10 +16,10 @@ class ARPPacket:
         self.arp_hlen = hlen  # Hardware length (HLEN)
         self.arp_plen = plen  # Protocol length (PLEN)
         self.arp_optr = optr  # Operator 1 is broadcast to request next destination mac, 2 is reply
-        self.arp_sha = sha  # sender hardware address (SHA)
-        self.arp_spa = spa  # Sender protocol address (SPA)
-        self.arp_tha = tha  # Target hardware address (THA)
-        self.arp_tpa = tpa  # Target protocol address (TPA)
+        self.arp_sha = sha  # sender hardware address (SHA) Mac
+        self.arp_spa = spa  # Sender protocol address (SPA) eg IP
+        self.arp_tha = tha  # Target hardware address (THA) Mac
+        self.arp_tpa = tpa  # Target protocol address (TPA) eg IP
 
     def __repr__(self):
         repr = ('ARPPacket: ' +
