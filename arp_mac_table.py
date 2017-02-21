@@ -60,7 +60,7 @@ class ARPnMACTable:
                 return False
 
     def get_mac_from_table(self, dest_ip):
-        dest_ip = str(socket.inet_ntoa(dest_ip))
+        # dest_ip = str(socket.inet_ntoa(dest_ip))
         print "--------------get_mac_from_table--------------------"
         for mac_row in self.mac_table:
             print str(IPAddress(mac_row.ip_addr)) + ":" + mac_row.mac + " : " + str(IPAddress(dest_ip))
@@ -93,7 +93,7 @@ class ARPnMACTable:
         conf_file = open(mac_config_path, 'a+')
         for mac_row in self.mac_table:
             line = "%s : %s : %s : %d : %d \n" % (mac_row.ip_addr, mac_row.mac,
-                                                  mac_row.interface.name, mac_row.mac_type, mac_row.age)
+                                                  mac_row.inter_name, mac_row.mac_type, mac_row.age)
             conf_file.write(line)
         conf_file.close()
 
