@@ -46,6 +46,7 @@ class ARPnMACTable:
     def __init__(self):
         self.mac_table = []
         self.router_list = []
+        self.host_list = []
 
     '''
     Only same MAC or broadcast address considered as matched addresses

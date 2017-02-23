@@ -14,9 +14,6 @@ Network Destination        Netmask          Gateway/next_ip       Interface  Met
   255.255.255.255  255.255.255.255         On-link     192.168.1.104    281
 ===========================================================================
 '''
-import socket
-
-import struct
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
@@ -37,7 +34,7 @@ class RoutingTable:
 
     @staticmethod
     def get_network_id(routing_row):
-        return IPNetwork(routing_row.inter_ip + "/" + routing_row.net_mask).cidr
+        return IPNetwork(routing_row.dest_ip + "/" + routing_row.net_mask).cidr
 
     def show_table(self):
         print "--------------------------routing table-------------------------------------"
@@ -47,12 +44,6 @@ class RoutingTable:
 
     def update_table(self, route_row):
         self.table.append(route_row)
-
-    @staticmethod
-    def get_ip_pack(ip_addr):
-        ip_addr = str(ip_addr).strip().split(".")
-        packed_ip = struct.pack('4B', int(ip_addr[0]), int(ip_addr[1]), int(ip_addr[2]), int(ip_addr[3]))
-        return packed_ip
 
     def init_routing_table(self, router):
         '''
@@ -66,20 +57,22 @@ class RoutingTable:
                     for other_inter in other_router.intList:
                         if IPNetwork(inter.ip_addr + "/" + inter.net_mask) == \
                                 IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask):
-                            routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip="on-link",
+                            routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=other_inter.ip_addr,
                                                      inter_ip=inter.ip_addr, net_mask=inter.net_mask)
                             self.table.append(routing_row)
 
     def find_shortest_path(self, dest_ip):
         match_rows = []
         for routing_row in self.table:
-            if IPAddress(routing_row.dest_ip) == IPAddress(dest_ip):
+            if IPAddress(dest_ip) in self.get_network_id(routing_row):
                 if IPAddress(routing_row.next_ip.strip()) == IPAddress(dest_ip):  # send the data frame if its connected
                     return routing_row
                 else:
                     match_rows.append(routing_row)
-
-        if len(match_rows) > 0:
+        longest_match_list = self.find_longest_match_network(dest_ip, match_rows)
+        if len(longest_match_list) == 1:
+            return longest_match_list[0]
+        elif len(longest_match_list) > 1:
             # find the shortest path if there are more than one paths to routing
             hops_list = [routing_row.hops for routing_row in match_rows]
             min_index = hops_list.index(min(hops_list))
@@ -87,28 +80,23 @@ class RoutingTable:
         else:
             return None
 
-    def find_longest_match_network(self, ip_address):
+    def find_longest_match_network(self, ip_address, match_interface_list):
         '''
          This method will return the longest match network interface.
-         Note: it possible has more than one longest match network interface in real case bu here I keep it for simple
-         and just return one of the longest match network interface if it has more than one.
+         Note: it possible has more than one longest match network interface in real case
         '''
-
         ip_address = IPAddress(ip_address)
-        match_interface_list = []
-        for routing_row in self.table:
-            network_id = self.get_network_id(routing_row)
-            if ip_address in network_id:
-                match_interface_list.append(routing_row)
         common_bits = [(IPAddress(self.get_network_id(routing_row)) &
                         ip_address).bits() for routing_row in match_interface_list]
         common_bit_counts = [bits.count('1') for bits in common_bits]
         if len(common_bit_counts) > 0:
-            max_index = common_bit_counts.index(max(common_bit_counts))
-            print "max_index=" + str(max_index)
-            return match_interface_list[max_index].inter_ip
+            max_value = max(common_bit_counts)
+            print "max_value=" + str(max_value)
+            max_index_list = [i for i, value in enumerate(common_bit_counts) if value == max_value]
+            print "max_index=" + str(max_index_list)
+            return [match_interface_list[index] for index in max_index_list]
         else:
-            return None
+            return []
 
 
 if __name__ == "__main__":

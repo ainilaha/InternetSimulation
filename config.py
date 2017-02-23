@@ -57,33 +57,41 @@ class ConfigMenu:
         des_ip = struct.pack('4B', 192, 168, 1, 10)
         ip_data = IPDatagram(src_ip, des_ip, data="hello world")
 
-        src_mac = ARPnMACTable.get_mac_pack(self.router_list[0].intList[0].mac)
-        des_mac = ARPnMACTable.get_mac_pack(self.router_list[1].intList[0].mac)
-        e = EthernetFrame(src_mac, des_mac, tcode=0x0800, data=ip_data.pack())
-        return e.pack()
+        return ip_data.pack()
 
 
     def show_table(self):
         # self.router_list[0].route_table.show_table()
+        print "---------------------router0----------------------------"
         self.router_list[0].arp_mac_table.show_table()
         self.router_list[0].route_table.show_table()
-        print "-------------------------------------------------"
+        print "---------------------router1----------------------------"
         self.router_list[1].arp_mac_table.show_table()
         self.router_list[1].route_table.show_table()
+        print "------------------------host 1------------------------"
+        self.host_list[1].arp_mac_table.show_table()
+        self.host_list[1].route_table.show_table()
 
     def test_send(self):
         eth = self.create_test_frame()
-        routing_row1 = RoutingRow(dest_ip="192.168.1.10", next_ip="10.10.10.2", inter_ip="10.10.10.1")
-        self.router_list[0].route_table.table.append(routing_row1)
-        routing_row2 = RoutingRow(dest_ip="192.168.1.10", next_ip="192.168.1.10", inter_ip="192.168.1.1")
-        self.router_list[1].route_table.table.append(routing_row2)
-        # mac_row = ARPnMACRow(ip_addr="192.168.1.10", mac=self.router_list[1].intList[0].mac, mac_type=0)
-        # mac_row.interface = self.router_list[1].intList[0]
-        # self.router_list[0].arp_mac_table.mac_table.append(mac_row)
-        self.router_list[0].received_frame_data_queue.put(eth)
+        routing_row1 = RoutingRow(dest_ip="192.168.1.1", next_ip="10.10.10.2", inter_ip="10.10.10.1")
+        self.host_list[0].route_table.table.append(routing_row1)
+        routing_row2 = RoutingRow(dest_ip="192.168.1.3", next_ip="12.12.12.12", inter_ip="12.12.12.1")
+        self.router_list[0].route_table.table.append(routing_row2)
+
+        routing_row3 = RoutingRow(dest_ip="192.168.1.5", next_ip="192.168.1.8", inter_ip="192.168.1.1")
+        self.router_list[1].route_table.table.append(routing_row3)
+        routing_row4 = RoutingRow(dest_ip="192.168.1.10", next_ip="192.168.1.5", inter_ip="192.168.1.8")
+        self.host_list[1].route_table.table.append(routing_row4)
+        self.host_list[0].send_datagram(eth)
         self.router_list[0].arp_mac_table.router_list = self.router_list
         self.router_list[1].arp_mac_table.router_list = self.router_list
-        self.router_list[2].arp_mac_table.router_list = self.router_list
+        self.router_list[0].arp_mac_table.host_list = self.host_list
+        self.router_list[1].arp_mac_table.host_list = self.host_list
+        self.host_list[0].arp_mac_table.host_list = self.host_list
+        self.host_list[0].arp_mac_table.router_list = self.router_list
+        self.host_list[1].arp_mac_table.host_list = self.host_list
+        self.host_list[1].arp_mac_table.router_list = self.router_list
         print "len router = " + str(len(self.router_list[0].arp_mac_table.router_list))
 
 

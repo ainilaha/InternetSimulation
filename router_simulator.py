@@ -6,7 +6,6 @@ import threading
 import time
 
 import struct
-from enum import Enum
 from Queue import Empty
 
 from arp_mac_table import ARPnMACRow, ARPnMACTable
@@ -15,154 +14,11 @@ from netaddr import IPAddress
 
 from arp import ARPPacket
 from ethernet import EthernetFrame
+from interface import Interface
 from ip import IPDatagram
 from routing_table import RoutingTable
 
-'''
-Interface class simulated an interface of a router. Each interface hold a send out queue to address packets.
-However, there is no receive queue in an interface since all received packets will go to the total queue
-in the router.
-Note: Here I am using a state control variable to simulated an interface interrupt in real OS
 
-'''
-
-
-class State(Enum):
-    BESSY = 0
-    AVAIlIBBIE = 1
-    NO_CONNECTED = 2
-
-
-class Interface:
-    def __init__(self):
-        self.type = 0  # faster 0  ser 1
-        self.name = ""  # faster 0/0, faster 1/1, ser 0/0, ser 0/1
-        self.mac = ""
-        self.ip_addr = "0.0.0.0"
-        self.net_mask = "255.255.255.0"
-        self.STATE = State.AVAIlIBBIE
-        self.send_queue = multiprocessing.Queue()
-        self.received_frame_queue = multiprocessing.Queue()
-        self.receive_arp_queue = multiprocessing.Queue()
-        self.router = None
-        self.send_thread = threading.Thread(target=self._send)
-        self.send_thread.start()
-        self.receiving = threading.Thread(target=self.receive_frame)
-        self.receiving.start()
-
-    def _send(self):
-        if self.router:
-            print self.router.name + ":" + self.name + ":interface starting send frame....."
-        time.sleep(0.01)
-        while True:
-            try:
-                next_ip_n_packets = self.send_queue.get(0)
-                self.send_packet(next_ip_n_packets)
-            except Empty:
-                pass
-            finally:
-                time.sleep(0.01)
-                # self._send()
-
-    def send_frame(self, eth_frame):
-        for router in self.router.arp_mac_table.router_list:
-            for inter in router.intList:
-                inter.received_frame_queue.put(eth_frame)
-
-    def send_packet(self, next_ip_n_packets):
-        if len(next_ip_n_packets) == 2:
-            ip_data = IPDatagram("", "", data="")
-            ip_data.unpack(next_ip_n_packets[1])
-            next_ip = next_ip_n_packets[0]
-            print self.router.name + ":" + self.name + " : send_frame" + ip_data.__repr__()
-            dest_mac_row = self.router.arp_mac_table.get_mac_from_table(next_ip)
-            print "------------------send_frame----------------------"
-            if dest_mac_row:
-                print "-----------if-------send_frame--" + self.mac + "-------------------" + dest_mac_row.mac
-                eth_frame = EthernetFrame(src_mac=ARPnMACTable.get_mac_pack(self.mac),
-                                          dest_mac=ARPnMACTable.get_mac_pack(dest_mac_row.mac), data=next_ip_n_packets[1])
-                print self.router.name + ":" + self.name + " : send_frame2 " + eth_frame.__repr__()
-                self.send_frame(eth_frame.pack())
-            else:
-                print "-----------else-------send_frame----------------------"
-                print "next_ip=" + next_ip
-                dest_mac = self.send_arp_request(next_ip)
-                eth_frame = EthernetFrame(src_mac=ARPnMACTable.get_mac_pack(self.mac),
-                                          dest_mac=dest_mac, data=next_ip_n_packets[1])
-                print self.router.name + ":" + self.name + " : else eth" + eth_frame.__repr__()
-                print self.router.name + ":" + self.name + " : else send_frame" + ip_data.__repr__()
-                self.send_frame(eth_frame.pack())
-                print self.router.name + " : " + self.name + " : " + "update_mac_table:" + EthernetFrame.eth_addr(dest_mac)
-                self.router.arp_mac_table.update_mac(EthernetFrame.eth_addr(dest_mac), ip_data.ip_dest_addr, self.name)
-                self.send_packet(next_ip_n_packets[1])
-
-    def receive_frame(self):
-        print self.name + ":starting listening and receiving frame....."
-        time.sleep(0.01)
-        data_frame = EthernetFrame(dest_mac="", src_mac="")
-        while True:
-            try:
-                ip_data_frame = self.received_frame_queue.get()
-                data_frame.unpack(ip_data_frame)
-               # print self.router.name + " : " + self.name + " : receive_frame:" + data_frame.__repr__()
-                dest_mac = EthernetFrame.eth_addr(data_frame.eth_dest_addr)
-                if EUI(dest_mac) == EUI(self.mac):
-                    if data_frame.eth_tcode == 0x0806:
-                        self.receive_arp_queue.put(ip_data_frame)
-                    elif data_frame.eth_tcode == 0x0800:
-                        self.router.received_frame_data_queue.put(ip_data_frame)
-                elif EUI("FF-FF-FF-FF-FF-FF") == EUI(dest_mac):
-                    self.reply_arp(ip_data_frame)
-            except Empty:
-                pass
-                # finally:
-                #    self.receive_frame()
-
-    def send_arp_request(self, dest_ip_addr):
-        print "-----------------------send_arp_request---------------------------"
-        spa = socket.inet_aton(self.ip_addr.strip())
-        sha = ARPnMACTable.get_mac_pack(self.mac)
-        tpa = socket.inet_aton(dest_ip_addr.strip())
-        # pack the ARP broadcast mac address
-        tha = struct.pack('!6B',
-                          int('FF', 16), int('FF', 16), int('FF', 16),
-                          int('FF', 16), int('FF', 16), int('FF', 16))
-        # pack ARP request
-        arp_packet = ARPPacket(sha=sha, spa=spa, tha=tha, tpa=tpa)
-        eth_data = arp_packet.pack()
-        # pack Ethernet Frame: 0x0806 wrapping ARP packet
-        eth_frame = EthernetFrame(dest_mac=tha, src_mac=sha, tcode=0x0806, data=eth_data)
-        print self.router.name + " : " + self.name + ":send_arp_request:" + eth_frame.__repr__()
-        print self.router.name + " : " + self.name + ":send_arp_request++:" + arp_packet.__repr__()
-        phy_data = eth_frame.pack()
-        for router in self.router.arp_mac_table.router_list:
-            for inter in router.intList:
-                inter.received_frame_queue.put(phy_data)
-        while True:
-            try:
-                packet = self.receive_arp_queue.get(0)
-                eth_frame.unpack(packet)
-                if eth_frame.eth_tcode == 0x0806:
-                    break
-            except Empty:
-                pass
-        arp_packet.unpack(eth_frame.data)
-        return arp_packet.arp_sha
-
-    def reply_arp(self, eth_frame):
-        print self.name + ":Listening ARP.... "
-        arp_frame = EthernetFrame(dest_mac="", src_mac="")
-        arp_frame.unpack(eth_frame)
-        arp_packet = ARPPacket(sha="", tha="", spa="")
-        # print self.name + ":request reply =" + arp_frame.__repr__()
-        arp_packet.unpack(arp_frame.data)
-        # print self.router.name +":" + self.name+":arp="+ arp_packet.__repr__() + "\n\n"
-        # print self.name + ":******* =" + str(socket.inet_ntoa(arp_packet.arp_tpa)).strip() +":"+self.ip_addr.strip()
-        if str(socket.inet_ntoa(arp_packet.arp_tpa)).strip() == self.ip_addr.strip():
-            arp_packet.arp_sha = ARPnMACTable.get_mac_pack(self.mac)
-            arp_frame = EthernetFrame(dest_mac=arp_frame.eth_src_addr,
-                                      src_mac=ARPnMACTable.get_mac_pack(self.mac), tcode=0x0806, data=arp_packet.pack())
-            self.send_frame(arp_frame.pack())
 
 
 '''
@@ -267,7 +123,7 @@ class RouterSimulator:
                             print "matched interface=" + interface.name
                             interface.send_queue.put([match_row.next_ip, ip_data_packet])
                 else:
-                    print self.name + ":**** dest ip =" + dest_ip + " not reachable or local address!!"
+                    print self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!"
 
             except Empty:
                 pass
