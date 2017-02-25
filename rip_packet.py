@@ -1,4 +1,3 @@
-# should run as daemon
 import socket
 from struct import pack, unpack, calcsize
 
@@ -55,7 +54,7 @@ class RIPPacket:
 
     def unpack(self, rip_packet):
         # unpack head
-        print len(rip_packet)
+        print "unpack=" + str(len(rip_packet))
         rip_fields = unpack(RIP_HDR_FMT, rip_packet[:calcsize(RIP_HDR_FMT)])
         self.cmd = rip_fields[0]
         self.ver = rip_fields[1]

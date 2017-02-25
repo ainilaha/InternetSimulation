@@ -16,6 +16,7 @@ from arp import ARPPacket
 from ethernet import EthernetFrame
 from interface import Interface
 from ip import IPDatagram
+from rip_simulator import RIPSimulator
 from routing_table import RoutingTable
 
 
@@ -43,6 +44,7 @@ class RouterSimulator:
         self.receive.start()
         self.routing_packets = threading.Thread(target=self.route_ip_datagram)
         self.routing_packets.start()
+        self.rip_simulator = RIPSimulator(self)
 
     def initialize_router(self):
         int_name_list = "faster 0/0", "faster 1/1", "ser 0/0", "ser 0/1"
@@ -111,19 +113,22 @@ class RouterSimulator:
             try:
                 ip_data_packet = self.received_datagram_queue.get()
                 ip_data.unpack(ip_data_packet)
-                print self.name + ":from route_ip_datagram+:" + ip_data.__repr__()
-                dest_ip = socket.inet_ntoa(ip_data.ip_dest_addr)
-                print self.name + ":from des_ip+:" + dest_ip
-                # inter_ip = self.route_table.find_longest_match_network(dest_ip)
-                match_row = self.route_table.find_shortest_path(dest_ip)
-                if match_row:
-                    print self.name + ":matched interface IP:" + match_row.inter_ip
-                    for interface in self.intList:
-                        if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
-                            print "matched interface=" + interface.name
-                            interface.send_queue.put([match_row.next_ip, ip_data_packet])
+                if ip_data.ip_proto == socket.IPPROTO_UDP:
+                    self.rip_simulator.received_queue.put(ip_data.data)
                 else:
-                    print self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!"
+                    print self.name + ":from route_ip_datagram+:" + ip_data.__repr__()
+                    dest_ip = socket.inet_ntoa(ip_data.ip_dest_addr)
+                    print self.name + ":from des_ip+:" + dest_ip
+                    # inter_ip = self.route_table.find_longest_match_network(dest_ip)
+                    match_row = self.route_table.find_shortest_path(dest_ip)
+                    if match_row:
+                        print self.name + ":matched interface IP:" + match_row.inter_ip
+                        for interface in self.intList:
+                            if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
+                                print "matched interface=" + interface.name
+                                interface.send_queue.put([match_row.next_ip, ip_data_packet])
+                    else:
+                        print self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!"
 
             except Empty:
                 pass
