@@ -3,23 +3,23 @@ import socket
 from struct import pack, unpack, calcsize
 
 RIP_HDR_FMT = '!BB'
-RIP_ENTRY_FMT = '!BH4s'
+RIP_ENTRY_FMT = '!BH4s4s'
 
 
 class Entry:
-    def __init__(self, afi=2, ip_addr='', metric=0):
+    def __init__(self, afi=2, ip_addr='', nex_ip='', metric=0):
         self.afi = afi  # Set to a value of 2 for IP
         self.ip_addr = ip_addr
+        self.next_ip = nex_ip  # it is more like feature of RIPv2
         self.metric = metric  # measure by hops in RIP
 
     def __repr__(self):
-        rep = 'Entry: [ afi:%d, addr:%s, metric:%d]' \
-              % (self.afi,
-                 socket.inet_ntoa(self.ip_addr), self.metric)
+        rep = 'Entry: [ afi:%d, addr:%s, next_ip:%s, metric:%d]' \
+              % (self.afi, socket.inet_ntoa(self.ip_addr), socket.inet_ntoa(self.next_ip), self.metric)
         return rep
 
     def pack(self):
-        rip_packet = pack(RIP_ENTRY_FMT, self.afi, self.metric, self.ip_addr)
+        rip_packet = pack(RIP_ENTRY_FMT, self.afi, self.metric, self.ip_addr, self.next_ip)
         return rip_packet
 
     def unpack(self, entry):
@@ -28,6 +28,7 @@ class Entry:
         self.afi = rip_fields[0]
         self.metric = rip_fields[1]
         self.ip_addr = rip_fields[2]
+        self.next_ip = rip_fields[3]
 
 
 class RIPPacket:
@@ -71,9 +72,11 @@ class RIPPacket:
 def main():
     ip = "10.10.10.11"
     ip_p = socket.inet_aton(ip)
-    entry = Entry(ip_addr=ip_p)
+    ip2 = "10.10.10.12"
+    ip_p2 = socket.inet_aton(ip2)
+    entry = Entry(ip_addr=ip_p,nex_ip=ip_p2)
     print "entry1=" + entry.__repr__()
-    entry2 = Entry(ip_addr=ip_p)
+    entry2 = Entry(ip_addr=ip_p, nex_ip=ip_p2)
     print entry2.unpack(entry.pack())
     print "entry2=" + entry.__repr__()
     rip = RIPPacket(cmd=0)
