@@ -18,10 +18,10 @@ class RIPSimulator:
         self.udp_simulator = UDPSimulator(router=self.router)
         self.received_queue = multiprocessing.Queue()
         self.receiving_rip_udp = threading.Thread(target=self.receive_rip_udp)
-        # self.receiving_rip_udp.daemon = True  # should run as daemon
+        self.receiving_rip_udp.daemon = True  # should run as daemon
         self.receiving_rip_udp.start()
         self.sending_rip_udp = threading.Thread(target=self.send_rip)
-        # self.sending_rip_udp.daemon = True
+        self.sending_rip_udp.daemon = True
         self.sending_rip_udp.start()
 
     def send_rip(self):
@@ -34,7 +34,7 @@ class RIPSimulator:
                     entry = Entry(ip_addr=dest_ip, nex_ip=socket.inet_aton(inter.ip_addr))
                     rip_packet.entry_list.append(entry)
                 if len(rip_packet.entry_list) > 0:
-                    print self.router.name + " :send_rip: " + rip_packet.__repr__()
+                    # print self.router.name + "**********************************" + rip_packet.__repr__()
                     self.udp_simulator.send_multicast(rip_packet.pack(), inter)
             time.sleep(RIP_REFRESH_TIME)
 
@@ -46,7 +46,7 @@ class RIPSimulator:
             try:
                 udp_bits = self.received_queue.get(0)
                 udp_packet.unpack(udp_bits)
-                print self.router.name + "from receive_udp:" + udp_packet.__repr__()
+                # print self.router.name + "from receive_udp:" + udp_packet.__repr__()
                 self.update_routing_table(udp_bits)
             except Empty:
                 pass
@@ -59,7 +59,8 @@ class RIPSimulator:
         rip_packet = RIPPacket()
         rip_packet.unpack(udp_packet.data)
         for entry in rip_packet.entry_list:
-            route_row = RoutingRow(dest_ip=entry.ip_addr, next_ip=entry.next_ip, inter_ip=udp_packet.dest_addr)
-            self.router.route_table.table.append(route_row)
-        print self.router.name + "----routing table updated----------------\n"
+            route_row = RoutingRow(dest_ip=socket.inet_ntoa(entry.ip_addr), next_ip=socket.inet_ntoa(entry.next_ip),
+                                   inter_ip=socket.inet_ntoa(udp_packet.dest_addr))
+            self.router.route_table.update_table(route_row)
+            # print self.router.name + "----routing table updated----------------\n"
         self.router.route_table.show_table()

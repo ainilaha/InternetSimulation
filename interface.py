@@ -70,11 +70,12 @@ class Interface:
             host.interface.received_frame_queue.put(eth_frame)
 
     def send_packet(self, next_ip_n_packets):
+
         if len(next_ip_n_packets) == 2:
             ip_data = IPDatagram("", "", data="")
             ip_data.unpack(next_ip_n_packets[1])
             next_ip = next_ip_n_packets[0]
-            print self.router.name + ":" + self.name + " : send_packet1 " + ip_data.__repr__()
+            # print self.router.name + ":" + self.name + " : send_packet1 " + ip_data.__repr__()
             dest_mac_row = self.router.arp_mac_table.get_mac_from_table(next_ip)
             if dest_mac_row:
                 print "-----------if-------send_frame--" + self.mac + "-------------------" + dest_mac_row.mac

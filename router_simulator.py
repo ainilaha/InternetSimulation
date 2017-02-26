@@ -19,9 +19,6 @@ from ip import IPDatagram
 from rip_simulator import RIPSimulator
 from routing_table import RoutingTable
 
-
-
-
 '''
 RouterSimulator class simulated an Router in simple way.
 
@@ -71,6 +68,7 @@ class RouterSimulator:
         self.arp_mac_table.save_table(self.arp_mac_table_path)
 
     def load_config(self):
+        print self.name + "*******************load_config******************************"
         if os.path.exists(str(self.config_file_path)):
             conf_file = open(self.config_file_path, 'r')
             i = 0
@@ -83,6 +81,7 @@ class RouterSimulator:
                 i += 1
             self.arp_mac_table.mac_table = []
             self.arp_mac_table.load_table_config(self.arp_mac_table_path)
+            self.route_table.init_routing_table_router(self)
 
     def show_config(self):
         for port in self.intList:

@@ -23,7 +23,6 @@ class Entry:
 
     def unpack(self, entry):
         rip_fields = unpack(RIP_ENTRY_FMT, entry[:calcsize(RIP_ENTRY_FMT)])
-        print calcsize(RIP_ENTRY_FMT)
         self.afi = rip_fields[0]
         self.metric = rip_fields[1]
         self.ip_addr = rip_fields[2]
@@ -54,7 +53,6 @@ class RIPPacket:
 
     def unpack(self, rip_packet):
         # unpack head
-        print "unpack=" + str(len(rip_packet))
         rip_fields = unpack(RIP_HDR_FMT, rip_packet[:calcsize(RIP_HDR_FMT)])
         self.cmd = rip_fields[0]
         self.ver = rip_fields[1]

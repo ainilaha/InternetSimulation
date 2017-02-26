@@ -14,23 +14,30 @@ Network Destination        Netmask          Gateway/next_ip       Interface  Met
   255.255.255.255  255.255.255.255         On-link     192.168.1.104    281
 ===========================================================================
 '''
+import os
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
 
 class RoutingRow:
-    def __init__(self, dest_ip, next_ip, inter_ip, net_mask="255.255.255.0"):
+    def __init__(self, dest_ip, next_ip, inter_ip, net_mask="255.255.255.0",metric=0 ):
         self.dest_ip = dest_ip
         self.net_mask = net_mask
         self.next_ip = next_ip  # next hop ( or gateway) IP or connected status (on-link)
         self.inter_ip = inter_ip  # an ip address or name of interface
-        self.hops = 0  # hops
+        self.metric = metric  # hops in RIP
+
+    def __repr__(self):
+        return "dest ip:" + self.dest_ip + ", next_ip: " + self.next_ip + ", net mask: " + \
+               self.net_mask + ", inter: " + self.inter_ip
 
 
 class RoutingTable:
     def __init__(self):
         self.table = []
         self.router_list = []
+        self.host_list = []
 
     @staticmethod
     def get_network_id(routing_row):
@@ -39,27 +46,58 @@ class RoutingTable:
     def show_table(self):
         print "--------------------------routing table-------------------------------------"
         for router_row in self.table:
-            print router_row.dest_ip + " : " + router_row.next_ip + " : " + router_row.net_mask + " : " +\
-                  router_row.inter_ip
+            print "dest ip:" + router_row.dest_ip + ", next_ip: " + router_row.next_ip + ", net mask: " + \
+                  router_row.net_mask + ", inter: " + router_row.inter_ip + " ,metric: " + str(router_row.metric)
 
     def update_table(self, route_row):
-        self.table.append(route_row)
+        is_exist = False
+        for route_row_exist in self.table:
+            if route_row.__repr__() == route_row_exist.__repr__():
+                is_exist = True
+                print "re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++"
+        if not is_exist:
+            # metric should +1
+            route_row.metric += 1
+            self.table.append(route_row)
+            self.show_table()
 
-    def init_routing_table(self, router):
+    def update_row_via_router(self, other_router, inter):
+        for other_inter in other_router.intList:
+            if IPNetwork(inter.ip_addr + "/" + inter.net_mask) == \
+                    IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask):
+                routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=other_inter.ip_addr,
+                                         inter_ip=inter.ip_addr, net_mask=inter.net_mask)
+                self.update_table(routing_row)
+
+    def update_row_via_host(self, other_host, inter):
+        if IPNetwork(inter.ip_addr + "/" + inter.net_mask) == \
+                IPNetwork(other_host.interface.ip_addr + "/" + other_host.interface.net_mask):
+            routing_row = RoutingRow(dest_ip=other_host.interface.ip_addr, next_ip=other_host.interface.ip_addr,
+                                     inter_ip=inter.ip_addr, net_mask=inter.net_mask)
+            self.update_table(routing_row)
+
+    def init_routing_table_router(self, router):
         '''
         This method will learn from all other routers and learn connected rows
         :param router: current router
         :return:
         '''
+        print router.name + ":********************init_routing_table***********************"
         for other_router in self.router_list:
             if other_router != router:
                 for inter in router.intList:
-                    for other_inter in other_router.intList:
-                        if IPNetwork(inter.ip_addr + "/" + inter.net_mask) == \
-                                IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask):
-                            routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=other_inter.ip_addr,
-                                                     inter_ip=inter.ip_addr, net_mask=inter.net_mask)
-                            self.table.append(routing_row)
+                    self.update_row_via_router(other_router, inter)
+        for other_host in self.host_list:
+            for inter in router.intList:
+                self.update_row_via_host(other_host, inter)
+
+    def init_routing_table_host(self, host):
+        print host.name + ":********************init_routing_table_host***********************"
+        for router in self.router_list:
+            self.update_row_via_router(router, host.interface)
+        for other_host in self.host_list:
+            if other_host != host:
+                self.update_row_via_host(other_host, host.interface)
 
     def find_shortest_path(self, dest_ip):
         match_rows = []
@@ -98,6 +136,25 @@ class RoutingTable:
         else:
             return []
 
+    def save_table(self, router_table_config):
+        if os.path.exists(router_table_config):
+            os.remove(router_table_config)
+        conf_file = open(router_table_config, 'a+')
+        for route_row in self.table:
+            line = "%s : %s : %s : %d : %d \n" % (route_row.dest_ip, route_row.next_ip, route_row.inter_ip,
+                                                  route_row.net_mask, route_row.metric)
+            conf_file.write(line)
+        conf_file.close()
+
+    def load_table_config(self, router_table_config):
+        if os.path.exists(router_table_config):
+            config_file = open(router_table_config, "r")
+            for line in config_file.readlines():
+                line = line.split(":")
+                route_row = RoutingRow(dest_ip=line[0].strip(), next_ip=line[1].strip(),
+                                       inter_ip=int(line[3].strip()), net_mask=line[2].strip(),
+                                       metric=int(line[4].strip()))
+                self.table.append(route_row)
 
 if __name__ == "__main__":
     # rt1 = RoutingRow("10.10.10.9", "10.10.10.11",)
