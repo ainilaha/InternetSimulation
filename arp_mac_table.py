@@ -5,6 +5,7 @@ import struct
 from netaddr import EUI
 from netaddr import IPAddress
 
+from logger import LOG
 
 '''
 ARPnMACTable simulated an MAC table and ARP cache table
@@ -62,9 +63,9 @@ class ARPnMACTable:
 
     def get_mac_from_table(self, dest_ip):
         # dest_ip = str(socket.inet_ntoa(dest_ip))
-        print "--------------get_mac_from_table--------------------"
+        LOG.debug("--------------get_mac_from_table--------------------")
         for mac_row in self.mac_table:
-            print str(IPAddress(mac_row.ip_addr)) + ":" + mac_row.mac + " : " + str(IPAddress(dest_ip))
+            LOG.debug(str(IPAddress(mac_row.ip_addr)) + ":" + mac_row.mac + " : " + str(IPAddress(dest_ip)))
             if IPAddress(mac_row.ip_addr) == IPAddress(dest_ip):
                 return mac_row
         return None
@@ -85,8 +86,8 @@ class ARPnMACTable:
 
     def show_table(self):
         for mac_row in self.mac_table:
-            print"%s : %s : %s : %d : %d " % (mac_row.ip_addr, mac_row.inter_name,
-                                              mac_row.mac, mac_row.mac_type, mac_row.age)
+            LOG.info("%s : %s : %s : %d : %d " % (mac_row.ip_addr, mac_row.inter_name,
+                                                  mac_row.mac, mac_row.mac_type, mac_row.age))
 
     def save_table(self, mac_config_path):
         if os.path.exists(mac_config_path):

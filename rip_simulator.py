@@ -5,6 +5,7 @@ import threading
 import time
 from Queue import Empty
 
+from logger import LOG
 from rip_packet import Entry, RIPPacket
 from routing_table import RoutingRow
 from udp import UDPSimulator, UDPPacket
@@ -25,7 +26,7 @@ class RIPSimulator:
         self.sending_rip_udp.start()
 
     def send_rip(self):
-        print self.router.name + ":starting sending RIP UDP....."
+        LOG.info(self.router.name + ":starting sending RIP UDP.....")
         while True:
             for inter in self.router.intList:
                 rip_packet = RIPPacket()
@@ -39,7 +40,7 @@ class RIPSimulator:
             time.sleep(RIP_REFRESH_TIME)
 
     def receive_rip_udp(self):
-        print self.router.name + ":starting listening and receiving RIP UDP....."
+        LOG.info(self.router.name + ":starting listening and receiving RIP UDP.....")
         time.sleep(0.01)
         udp_packet = UDPPacket()
         while True:

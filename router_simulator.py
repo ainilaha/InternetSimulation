@@ -16,6 +16,7 @@ from arp import ARPPacket
 from ethernet import EthernetFrame
 from interface import Interface
 from ip import IPDatagram
+from logger import LOG
 from rip_simulator import RIPSimulator
 from routing_table import RoutingTable
 
@@ -68,7 +69,7 @@ class RouterSimulator:
         self.arp_mac_table.save_table(self.arp_mac_table_path)
 
     def load_config(self):
-        print self.name + "*******************load_config******************************"
+        LOG.info(self.name + "*******************load_config******************************")
         if os.path.exists(str(self.config_file_path)):
             conf_file = open(self.config_file_path, 'r')
             i = 0
@@ -85,18 +86,18 @@ class RouterSimulator:
 
     def show_config(self):
         for port in self.intList:
-            print port.name + " : " + str(port.type) + " : " + port.ip_addr + " : " + port.mac + "\n"
-            print "----------------------------------------\n"
+            LOG.info( port.name + " : " + str(port.type) + " : " + port.ip_addr + " : " + port.mac + "\n")
+            LOG.info( "----------------------------------------\n")
 
     def receive_frame(self):
-        print self.name + ":starting listening and receiving frame....."
+        LOG.info( self.name + ":starting listening and receiving frame.....")
         time.sleep(0.01)
         data_frame = EthernetFrame(dest_mac="", src_mac="")
         while True:
             try:
                 ip_data_frame = self.received_frame_data_queue.get(0)
                 data_frame.unpack(ip_data_frame)
-                print self.name + ":from receive_frame:" + data_frame.__repr__()
+                LOG.debug(self.name + ":from receive_frame:" + data_frame.__repr__())
                 if 0x0800 == data_frame.eth_tcode:  # ip protocol
                     self.received_datagram_queue.put(data_frame.data)
             except Empty:
@@ -105,7 +106,7 @@ class RouterSimulator:
                 #     self.receive_frame()
 
     def route_ip_datagram(self):
-        print self.name + ":starting listening and routing..."
+        LOG.info(self.name + ":starting listening and routing...")
         time.sleep(0.01)
         ip_data = IPDatagram("", "", data="")
         while True:
@@ -115,19 +116,19 @@ class RouterSimulator:
                 if ip_data.ip_proto == socket.IPPROTO_UDP:
                     self.rip_simulator.received_queue.put(ip_data.data)
                 else:
-                    print self.name + ":from route_ip_datagram+:" + ip_data.__repr__()
+                    LOG.info(self.name + ":from route_ip_datagram+:" + ip_data.__repr__())
                     dest_ip = socket.inet_ntoa(ip_data.ip_dest_addr)
-                    print self.name + ":from des_ip+:" + dest_ip
+                    LOG.debug(self.name + ":from des_ip+:" + dest_ip)
                     # inter_ip = self.route_table.find_longest_match_network(dest_ip)
                     match_row = self.route_table.find_shortest_path(dest_ip)
                     if match_row:
-                        print self.name + ":matched interface IP:" + match_row.inter_ip
+                        LOG.debug(self.name + ":matched interface IP:" + match_row.inter_ip)
                         for interface in self.intList:
                             if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
-                                print "matched interface=" + interface.name
+                                LOG.debug( "matched interface=" + interface.name)
                                 interface.send_queue.put([match_row.next_ip, ip_data_packet])
                     else:
-                        print self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!"
+                        LOG.debug(self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!")
 
             except Empty:
                 pass

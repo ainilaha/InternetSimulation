@@ -17,7 +17,7 @@ class ConfigMenu:
 
     def create_routers(self):
         i = 1
-        while i < 4:
+        while i < 6:
             router_simulator = RouterSimulator("Router" + str(i))
             host_simulator = HostSimulator("Host" + str(i))
             self.router_list.append(router_simulator)
@@ -50,10 +50,10 @@ class ConfigMenu:
             ip = raw_input("Input IP address of int "+str(i+1)+":")
             router.intList[i].ip_addr = str(ip)
             i += 1
-        router.route_table.init_routing_table()
+        router.route_table.init_routing_table_router(router)
         router.show_config()
         router.save_config()
-        router.arp_mac_table.show_table(router)
+        router.arp_mac_table.show_table()
 
     def config_host_ip(self):
         value = raw_input("Input host Number(1 to 5):")
@@ -63,7 +63,6 @@ class ConfigMenu:
         host_simulator.interface.ip_addr = str(ip)
         host_simulator.show_config()
         host_simulator.save_config()
-        host_simulator.load_config()
         host_simulator.arp_mac_table.show_table()
 
     def create_test_frame(self):

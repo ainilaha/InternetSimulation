@@ -14,6 +14,7 @@ from netaddr import IPAddress
 from arp_mac_table import ARPnMACTable, ARPnMACRow
 from ethernet import EthernetFrame
 from ip import IPDatagram
+from logger import LOG
 from router_simulator import Interface
 from routing_table import RoutingTable
 
@@ -42,7 +43,7 @@ class HostSimulator:
         self.load_config()
 
     def receive_datagram(self):
-        print self.name + ":starting listening and routing..."
+        LOG.info(self.name + ":starting listening and routing...")
         time.sleep(0.01)
         data_frame = EthernetFrame(dest_mac="", src_mac="")
         ip_data = IPDatagram("", "", data="")
@@ -51,33 +52,31 @@ class HostSimulator:
                 ip_data_packet = self.received_frame_data_queue.get()
                 data_frame.unpack(ip_data_packet)
                 ip_data.unpack(data_frame.data)
-                print self.name + ": receive ip packets=" + ip_data.__repr__()  # will print it on chat window
+                LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window
             except Empty:
                 pass
             finally:
                 time.sleep(0.001)
 
     def send_datagram(self, ip_packets):
-        print "----------------send_datagram------------------------------"
+        LOG.info(self.name + ":----------------send_datagram------------------------------")
         ip_data = IPDatagram("", "", data="")
         ip_data.unpack(ip_packets)
-        print self.name + ":from send_datagram+:" + ip_data.__repr__()
+        LOG.info( self.name + ":from send_datagram+:" + ip_data.__repr__())
         dest_ip = socket.inet_ntoa(ip_data.ip_dest_addr)
-        print self.name + ":from des_ip+:" + dest_ip
+        LOG.debug( self.name + ":from des_ip+:" + dest_ip)
         match_row = self.route_table.find_shortest_path(dest_ip)
         if match_row:
-            print "---------send_datagram--------------if"
             if IPAddress(self.interface.ip_addr) == IPAddress(match_row.inter_ip):
-                print "matched interface=" + self.interface.name
+                LOG.info("matched interface=" + self.interface.name)
                 src_mac = ARPnMACTable.get_mac_pack(self.interface.mac)
                 ip_frame = EthernetFrame(src_mac, src_mac, tcode=0x0800, data=ip_packets)
-                print self.name + " :from send_datagram: " + ip_frame.__repr__()
+                LOG.info( self.name + " :from send_datagram: " + ip_frame.__repr__())
                 self.interface.send_queue.put([match_row.next_ip,ip_packets])
             else:
-                print "not match"
+                LOG.info(self.name + "from send_datagram:not match routing row")
         else:
-            print "-----------send_datagram------------else"
-            print self.name + ":**** dest ip =" + dest_ip + " not reachable or dest ip is current host..."
+            LOG.info(self.name + ":**** dest ip =" + dest_ip + " not reachable or dest ip is current host...")
 
     def init_arp_mac_table(self):
         self.arp_mac_table.mac_table = []
@@ -109,7 +108,7 @@ class HostSimulator:
             self.arp_mac_table.load_table_config(self.arp_mac_table_path)
 
     def show_config(self):
-        print self.interface.name + " : " + str(self.interface.type) + " : " + self.interface.ip_addr + \
-              " : " + self.interface.mac + "\n"
-        print "----------------------------------------\n"
+        LOG.info( self.interface.name + " : " + str(self.interface.type) + " : " + self.interface.ip_addr + \
+              " : " + self.interface.mac + "\n")
+        LOG.info( "----------------------------------------\n")
 

@@ -19,14 +19,17 @@ import os
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
+from logger import LOG
+
 
 class RoutingRow:
-    def __init__(self, dest_ip, next_ip, inter_ip, net_mask="255.255.255.0",metric=0 ):
+    def __init__(self, dest_ip, next_ip, inter_ip, net_mask="255.255.255.0", metric=0, time=-1):
         self.dest_ip = dest_ip
         self.net_mask = net_mask
         self.next_ip = next_ip  # next hop ( or gateway) IP or connected status (on-link)
         self.inter_ip = inter_ip  # an ip address or name of interface
         self.metric = metric  # hops in RIP
+        self.time = time  # static routing row is -1 and will not delete from a router and dynamic router will expire
 
     def __repr__(self):
         return "dest ip:" + self.dest_ip + ", next_ip: " + self.next_ip + ", net mask: " + \
@@ -44,17 +47,17 @@ class RoutingTable:
         return IPNetwork(routing_row.dest_ip + "/" + routing_row.net_mask).cidr
 
     def show_table(self):
-        print "--------------------------routing table-------------------------------------"
+        LOG.debug("---------------show_table-----------routing table-------------------------------------")
         for router_row in self.table:
-            print "dest ip:" + router_row.dest_ip + ", next_ip: " + router_row.next_ip + ", net mask: " + \
-                  router_row.net_mask + ", inter: " + router_row.inter_ip + " ,metric: " + str(router_row.metric)
+            LOG.debug("dest ip:" + router_row.dest_ip + ", next_ip: " + router_row.next_ip + ", net mask: " +
+                      router_row.net_mask + ", inter: " + router_row.inter_ip + " ,metric: " + str(router_row.metric))
 
     def update_table(self, route_row):
         is_exist = False
         for route_row_exist in self.table:
             if route_row.__repr__() == route_row_exist.__repr__():
                 is_exist = True
-                print "re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                LOG.debug("re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++")
         if not is_exist:
             # metric should +1
             route_row.metric += 1
@@ -82,7 +85,7 @@ class RoutingTable:
         :param router: current router
         :return:
         '''
-        print router.name + ":********************init_routing_table***********************"
+        LOG.info(router.name + ":********************init_routing_table***********************")
         for other_router in self.router_list:
             if other_router != router:
                 for inter in router.intList:
@@ -92,7 +95,7 @@ class RoutingTable:
                 self.update_row_via_host(other_host, inter)
 
     def init_routing_table_host(self, host):
-        print host.name + ":********************init_routing_table_host***********************"
+        LOG.info(host.name + ":********************init_routing_table_host***********************")
         for router in self.router_list:
             self.update_row_via_router(router, host.interface)
         for other_host in self.host_list:
@@ -129,9 +132,9 @@ class RoutingTable:
         common_bit_counts = [bits.count('1') for bits in common_bits]
         if len(common_bit_counts) > 0:
             max_value = max(common_bit_counts)
-            print "max_value=" + str(max_value)
+            # print "max_value=" + str(max_value)
             max_index_list = [i for i, value in enumerate(common_bit_counts) if value == max_value]
-            print "max_index=" + str(max_index_list)
+            # print "max_index=" + str(max_index_list)
             return [match_interface_list[index] for index in max_index_list]
         else:
             return []
@@ -155,6 +158,7 @@ class RoutingTable:
                                        inter_ip=int(line[3].strip()), net_mask=line[2].strip(),
                                        metric=int(line[4].strip()))
                 self.table.append(route_row)
+
 
 if __name__ == "__main__":
     # rt1 = RoutingRow("10.10.10.9", "10.10.10.11",)

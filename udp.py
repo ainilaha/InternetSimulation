@@ -31,9 +31,9 @@ class UDPPacket:
             self.data)  # length specifies the length in bytes of the UDP header and UDP data
 
     def __repr__(self):
-        rep = 'UDPPacket: [ src_addr:%s, dest_addr:%s, length:%d, checksum:%d, data=%s]' \
+        rep = 'UDPPacket: [ src_addr:%s, dest_addr:%s, length:%d, checksum:%d]' \
               % (socket.inet_ntoa(self.src_addr), socket.inet_ntoa(self.dest_addr), self.length,
-                 self.checksum, self.data)
+                 self.checksum)
         return rep
 
     def pack(self):

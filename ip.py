@@ -41,12 +41,12 @@ class IPDatagram:
         repr = ('IPDatagram: ' +
                 '[ver: %d, ihl: %d, tos: %d, tlen: %d, id: %d, ' +
                 ' frag_off: %d, ttl: %d, proto: %d, hdr_checksum: 0x%04x,' +
-                ' src_addr: %s, dest_addr: %s, options: %s, data: %s]') \
+                ' src_addr: %s, dest_addr: %s, options: %s') \
                % (self.ip_ver, self.ip_ihl, self.ip_tos, self.ip_tlen,
                   self.ip_id, self.ip_frag_off, self.ip_ttl, self.ip_proto,
                   self.ip_hdr_cksum, socket.inet_ntoa(self.ip_src_addr),
                   socket.inet_ntoa(self.ip_dest_addr),
-                  'Yes' if self.ip_opts else None, self.data)
+                  'Yes' if self.ip_opts else None)
         return repr
 
     '''
