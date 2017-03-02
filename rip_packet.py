@@ -58,27 +58,25 @@ class RIPPacket:
         self.ver = rip_fields[1]
         # unpack entry list
         entry_list = rip_packet[calcsize(RIP_HDR_FMT):]
-        entry = Entry()
+
         while len(entry_list) > 0 and len(entry_list) % calcsize(RIP_ENTRY_FMT) == 0:
             entry_packed = entry_list[:calcsize(RIP_ENTRY_FMT)]
             entry_list = entry_list[calcsize(RIP_ENTRY_FMT):]
+            entry = Entry()
             entry.unpack(entry_packed)
             self.entry_list.append(entry)
 
 
 def main():
-    ip = "10.10.10.11"
-    ip_p = socket.inet_aton(ip)
-    ip2 = "10.10.10.12"
-    ip_p2 = socket.inet_aton(ip2)
-    entry = Entry(ip_addr=ip_p,nex_ip=ip_p2)
-    print "entry1=" + entry.__repr__()
-    entry2 = Entry(ip_addr=ip_p, nex_ip=ip_p2)
-    print entry2.unpack(entry.pack())
-    print "entry2=" + entry.__repr__()
+
+    entry1 = Entry(ip_addr=socket.inet_aton("10.10.10.12"),nex_ip=socket.inet_aton("10.10.10.12"))
+    entry2 = Entry(ip_addr=socket.inet_aton("122.102.102.122"), nex_ip=socket.inet_aton("10.10.10.12"))
+    entry = Entry(ip_addr=socket.inet_aton("19.16.10.12"), nex_ip=socket.inet_aton("10.10.10.12"))
     rip = RIPPacket(cmd=0)
     rip.entry_list.append(entry)
+    rip.entry_list.append(entry1)
     rip.entry_list.append(entry2)
+
 
     print "rip1=" + rip.__repr__()
     rip2 = RIPPacket(cmd=0)

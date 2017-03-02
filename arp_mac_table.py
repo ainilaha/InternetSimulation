@@ -74,7 +74,7 @@ class ARPnMACTable:
         mac_row = ARPnMACRow(ip_addr=str(socket.inet_ntoa(dest_ip)), mac=str(EUI(mac)),
                              inter_name=inter_name, mac_type=0, age=5)
         self.mac_table.append(mac_row)
-        self.show_table()
+        #self.show_table()
 
     @staticmethod
     def get_mac_pack(mac):

@@ -31,7 +31,7 @@ class RouterSimulator:
         self.intList = []  # interface list
         self.name = name
         self.message_content = ""
-        self.route_table = RoutingTable()
+        self.route_table = RoutingTable(router=self)
         self.arp_mac_table = ARPnMACTable()
         self.config_file_path = "config/" + self.name
         self.arp_mac_table_path = "config/" + self.name + "_apr_mac"
@@ -82,7 +82,7 @@ class RouterSimulator:
                 i += 1
             self.arp_mac_table.mac_table = []
             self.arp_mac_table.load_table_config(self.arp_mac_table_path)
-            self.route_table.init_routing_table_router(self)
+            self.route_table.init_routing_table(self)
 
     def show_config(self):
         for port in self.intList:
@@ -90,7 +90,7 @@ class RouterSimulator:
             LOG.info( "----------------------------------------\n")
 
     def receive_frame(self):
-        LOG.info( self.name + ":starting listening and receiving frame.....")
+        LOG.info(self.name + ":starting listening and receiving frame.....")
         time.sleep(0.01)
         data_frame = EthernetFrame(dest_mac="", src_mac="")
         while True:
@@ -125,7 +125,7 @@ class RouterSimulator:
                         LOG.debug(self.name + ":matched interface IP:" + match_row.inter_ip)
                         for interface in self.intList:
                             if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
-                                LOG.debug( "matched interface=" + interface.name)
+                                LOG.debug("matched interface=" + interface.name)
                                 interface.send_queue.put([match_row.next_ip, ip_data_packet])
                     else:
                         LOG.debug(self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!")

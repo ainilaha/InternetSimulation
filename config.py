@@ -5,6 +5,7 @@ from arp_mac_table import ARPnMACTable
 from ethernet import EthernetFrame
 from host_simulator import HostSimulator
 from ip import IPDatagram
+from logger import LOG
 from router_simulator import RouterSimulator
 from routing_table import RoutingRow
 
@@ -26,7 +27,7 @@ class ConfigMenu:
         for router_simulator in self.router_list:
             router_simulator.route_table.router_list = self.router_list
             router_simulator.route_table.host_list = self.host_list
-            router_simulator.route_table.init_routing_table_router(router_simulator)
+            router_simulator.route_table.init_routing_table(router_simulator)
             router_simulator.arp_mac_table.router_list = self.router_list
             router_simulator.arp_mac_table.host_list = self.host_list
 
@@ -35,7 +36,7 @@ class ConfigMenu:
             host_simulator.route_table.host_list = self.host_list
             host_simulator.arp_mac_table.router_list = self.router_list
             host_simulator.arp_mac_table.host_list = self.host_list
-            host_simulator.route_table.init_routing_table_host(host_simulator)
+            host_simulator.route_table.init_routing_table(host_simulator)
 
     @staticmethod
     def show_config(menu):
@@ -66,8 +67,8 @@ class ConfigMenu:
         host_simulator.arp_mac_table.show_table()
 
     def create_test_frame(self):
-        src_ip = struct.pack('4B', 100, 168, 10, 10)
-        des_ip = struct.pack('4B', 192, 168, 1, 10)
+        src_ip = struct.pack('4B', 192, 168, 1, 8)
+        des_ip = struct.pack('4B', 186, 186, 186, 4)
         ip_data = IPDatagram(src_ip, des_ip, data="hello world")
 
         return ip_data.pack()
@@ -75,15 +76,12 @@ class ConfigMenu:
 
     def show_table(self):
         # self.router_list[0].route_table.show_table()
-        print "---------------------router0----------------------------"
-        self.router_list[0].arp_mac_table.show_table()
-        self.router_list[0].route_table.show_table()
-        print "---------------------router1----------------------------"
-        self.router_list[1].arp_mac_table.show_table()
-        self.router_list[1].route_table.show_table()
-        print "------------------------host 1------------------------"
-        self.host_list[1].arp_mac_table.show_table()
-        self.host_list[1].route_table.show_table()
+        for router in self.router_list:
+            LOG.info(router.name + ":****************************:")
+            router.route_table.show_table()
+        for host in self.host_list:
+            LOG.info(host.name + ":*****************************:")
+            host.route_table.show_table()
 
     def test_send(self):
         eth = self.create_test_frame()
@@ -97,15 +95,6 @@ class ConfigMenu:
         # routing_row4 = RoutingRow(dest_ip="192.168.1.10", next_ip="192.168.1.5", inter_ip="192.168.1.8")
         # self.host_list[1].route_table.table.append(routing_row4)
         self.host_list[0].send_datagram(eth)
-        self.router_list[0].arp_mac_table.router_list = self.router_list
-        self.router_list[1].arp_mac_table.router_list = self.router_list
-        self.router_list[0].arp_mac_table.host_list = self.host_list
-        self.router_list[1].arp_mac_table.host_list = self.host_list
-        self.host_list[0].arp_mac_table.host_list = self.host_list
-        self.host_list[0].arp_mac_table.router_list = self.router_list
-        self.host_list[1].arp_mac_table.host_list = self.host_list
-        self.host_list[1].arp_mac_table.router_list = self.router_list
-        print "len router = " + str(len(self.router_list[0].arp_mac_table.router_list))
 
 
 if __name__ == "__main__":

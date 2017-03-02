@@ -15,31 +15,36 @@ from arp_mac_table import ARPnMACTable, ARPnMACRow
 from ethernet import EthernetFrame
 from ip import IPDatagram
 from logger import LOG
+from rip_packet import RIPPacket
+from rip_simulator import RIPSimulator
 from router_simulator import Interface
 from routing_table import RoutingTable
+from udp import UDPPacket
 
 
 class HostSimulator:
     def __init__(self, name):
-        self.interface = None
+        self.intList = []  # there is only on interface in host
         self.name = name
         self.received_frame_data_queue = multiprocessing.Queue()
         self.chat_window = None
-        self.route_table = RoutingTable()
+        self.route_table = RoutingTable(router=self)
         self.arp_mac_table = ARPnMACTable()
         self.config_file_path = "config/" + self.name
         self.arp_mac_table_path = "config/" + self.name + "_apr_mac"
         self.ini_interface()
         self.host_receiving = threading.Thread(target=self.receive_datagram)
         self.host_receiving.start()
+        self.rip_simulator = RIPSimulator(self)
 
     def ini_interface(self):
         mac = binascii.b2a_hex(os.urandom(6))  # random generate 48-bit Mac Address presented by 12 hex numbers
-        self.interface = Interface()
-        self.interface.mac = str(EUI(mac))
-        self.interface.router = self
-        self.interface.name = "eth0"
-        self.interface.type = 1
+        interface = Interface()
+        interface.mac = str(EUI(mac))
+        interface.router = self
+        interface.name = "eth0"
+        interface.type = 1
+        self.intList.append(interface)
         self.load_config()
 
     def receive_datagram(self):
@@ -52,7 +57,17 @@ class HostSimulator:
                 ip_data_packet = self.received_frame_data_queue.get()
                 data_frame.unpack(ip_data_packet)
                 ip_data.unpack(data_frame.data)
-                LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window
+                if ip_data.ip_proto == socket.IPPROTO_UDP:
+                    udp_packet = UDPPacket()
+                    udp_packet.unpack(ip_data.data)
+                    rip_packet = RIPPacket(udp_packet)
+                    rip_packet.unpack(udp_packet.data)
+                    LOG.debug(
+                        self.name + "*******************888: receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
+                    self.rip_simulator.received_queue.put(ip_data.data)
+
+                else:
+                    LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window
             except Empty:
                 pass
             finally:
@@ -62,17 +77,17 @@ class HostSimulator:
         LOG.info(self.name + ":----------------send_datagram------------------------------")
         ip_data = IPDatagram("", "", data="")
         ip_data.unpack(ip_packets)
-        LOG.info( self.name + ":from send_datagram+:" + ip_data.__repr__())
+        LOG.info(self.name + ":from send_datagram+:" + ip_data.__repr__())
         dest_ip = socket.inet_ntoa(ip_data.ip_dest_addr)
-        LOG.debug( self.name + ":from des_ip+:" + dest_ip)
+        LOG.debug(self.name + ":from des_ip+:" + dest_ip)
         match_row = self.route_table.find_shortest_path(dest_ip)
         if match_row:
-            if IPAddress(self.interface.ip_addr) == IPAddress(match_row.inter_ip):
-                LOG.info("matched interface=" + self.interface.name)
-                src_mac = ARPnMACTable.get_mac_pack(self.interface.mac)
+            if IPAddress(self.intList[0].ip_addr) == IPAddress(match_row.inter_ip):
+                LOG.info("matched interface=" + self.intList[0].name)
+                src_mac = ARPnMACTable.get_mac_pack(self.intList[0].mac)
                 ip_frame = EthernetFrame(src_mac, src_mac, tcode=0x0800, data=ip_packets)
-                LOG.info( self.name + " :from send_datagram: " + ip_frame.__repr__())
-                self.interface.send_queue.put([match_row.next_ip,ip_packets])
+                LOG.info(self.name + " :from send_datagram: " + ip_frame.__repr__())
+                self.intList[0].send_queue.put([match_row.next_ip, ip_packets])
             else:
                 LOG.info(self.name + "from send_datagram:not match routing row")
         else:
@@ -80,8 +95,8 @@ class HostSimulator:
 
     def init_arp_mac_table(self):
         self.arp_mac_table.mac_table = []
-        arp_n_mac_row = ARPnMACRow(ip_addr=self.interface.ip_addr, mac=self.interface.mac, mac_type=1,
-                                   inter_name=self.interface.name, age=-1)
+        arp_n_mac_row = ARPnMACRow(ip_addr=self.intList[0].ip_addr, mac=self.intList[0].mac, mac_type=1,
+                                   inter_name=self.intList[0].name, age=-1)
         self.arp_mac_table.mac_table.append(arp_n_mac_row)
 
     def save_config(self):
@@ -89,8 +104,8 @@ class HostSimulator:
             os.remove(self.config_file_path)
         conf_file = open(self.config_file_path, 'a+')  # Trying to create a new file or open one
 
-        conf_file.write(self.interface.name + " : " + str(self.interface.type) + " : " + self.interface.ip_addr +
-                        " : " + self.interface.mac + os.linesep)
+        conf_file.write(self.intList[0].name + " : " + str(self.intList[0].type) + " : " + self.intList[0].ip_addr +
+                        " : " + self.intList[0].mac + os.linesep)
         conf_file.close()
         self.init_arp_mac_table()
         self.arp_mac_table.save_table(self.arp_mac_table_path)
@@ -100,15 +115,14 @@ class HostSimulator:
             conf_file = open(self.config_file_path, 'r')
             line = conf_file.read()
             line = line.split(":")
-            self.interface.name = str(line[0]).strip()
-            self.interface.type = str(line[1]).strip()
-            self.interface.ip_addr = str(line[2]).strip()
-            self.interface.mac = str(line[3]).strip()
+            self.intList[0].name = str(line[0]).strip()
+            self.intList[0].type = str(line[1]).strip()
+            self.intList[0].ip_addr = str(line[2]).strip()
+            self.intList[0].mac = str(line[3]).strip()
             self.arp_mac_table.mac_table = []
             self.arp_mac_table.load_table_config(self.arp_mac_table_path)
 
     def show_config(self):
-        LOG.info( self.interface.name + " : " + str(self.interface.type) + " : " + self.interface.ip_addr + \
-              " : " + self.interface.mac + "\n")
-        LOG.info( "----------------------------------------\n")
-
+        LOG.info(self.intList[0].name + " : " + str(self.intList[0].type) + " : " + self.intList[0].ip_addr + \
+                 " : " + self.intList[0].mac + "\n")
+        LOG.info("----------------------------------------\n")

@@ -14,11 +14,13 @@ import socket
 
 from struct import pack, unpack, calcsize
 
+from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from ip import IPDatagram
+from logger import LOG
 
-UDP_HDR_FMT = '!BB4s4s'
+UDP_HDR_FMT = '!II4s4s'
 
 
 class UDPPacket:
@@ -37,8 +39,10 @@ class UDPPacket:
         return rep
 
     def pack(self):
+        self.length = calcsize(UDP_HDR_FMT) + len(self.data)
         udp_head = pack(UDP_HDR_FMT, self.length, self.checksum, self.src_addr, self.dest_addr)
-        return udp_head + self.data
+        udp_packed = ''.join([udp_head, self.data])
+        return udp_packed
 
     def unpack(self, udp_datagram):
         udp_fields = unpack(UDP_HDR_FMT, udp_datagram[:calcsize(UDP_HDR_FMT)])
@@ -53,21 +57,21 @@ class UDPSimulator:
     def __init__(self, router=None):
         self.router = router
 
-    def send_multicast(self, udp_data, interface):
+    def send_multicast(self, rip_packet, interface):
         local_network_id = IPNetwork(interface.ip_addr + "/" + interface.net_mask).cidr
-        for router in self.router.route_table.router_list:
+        for router in self.router.route_table.host_list + self.router.route_table.router_list:
             if router != self.router:
                 for inter in router.intList:
-                    if local_network_id == \
-                            IPNetwork(inter.ip_addr + "/" + inter.net_mask).cidr:
+                    if IPAddress(inter.ip_addr) in local_network_id and inter.ip_addr != interface.ip_addr:
                         udp_packet = UDPPacket(src_addr=socket.inet_aton(interface.ip_addr),
-                                               dest_addr=socket.inet_aton(inter.ip_addr), data=udp_data)
+                                               dest_addr=socket.inet_aton(inter.ip_addr), data=rip_packet.pack())
                         ip_data = IPDatagram(ip_src_addr=socket.inet_aton(interface.ip_addr),
                                              ip_dest_addr=socket.inet_aton(inter.ip_addr),
                                              ip_proto=socket.IPPROTO_UDP,
                                              data=udp_packet.pack())
                         # print self.router.name + "send_multicast:" + ip_data.__repr__()
-                        # print "put it to interface:" + interface.ip_addr + "dest_ip=" + inter.ip_addr
+                        LOG.debug(self.router.name + "udp RIP sender interface:" + interface.ip_addr +
+                                  "dest_ip=" + inter.ip_addr+"rip_data="+rip_packet.__repr__())
                         interface.send_queue.put([inter.ip_addr, ip_data.pack()])
 
 
