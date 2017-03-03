@@ -65,8 +65,8 @@ class ChatWindowCreator(Frame):
         self.host_list = []
         self.pack()
         self.master.title("ChatWindowCreator")
-        self.button1 = tK.Button(self, text="Close", command=self.quit)
-        self.button1.pack()
+        # self.button1 = tK.Button(self, text="Close", command=self.quit)
+        # self.button1.pack()
 
     def new_window(self):
         print "--------------------------new_window-----------------------"
