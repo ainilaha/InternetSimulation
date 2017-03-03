@@ -59,7 +59,6 @@ class RoutingTable:
         # discard the entry if destination address equal to local address to prevent routing loop
         # elif route_row.dest_ip not in [inter.ip_addr for inter in self.router.intList]:
         else:
-            # metric should +1
             route_row.metric += 1
             self.table.append(route_row)
             #self.show_table()
@@ -69,7 +68,8 @@ class RoutingTable:
         for other_inter in other_router.intList:
             other_net_id = IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask)
             # if inter.ip_addr != other_inter.ip_addr and (other_net_id == local_net_id or other_router == self.router):
-            if other_net_id == local_net_id or other_router == self.router:
+            if other_net_id == local_net_id and (inter.ip_addr != other_inter.ip_addr or other_router == self.router):
+                print "XXXXXXXXXXXXXXXXXXXXXXXX router name = %s other id = %s   local id=%s" % (self.router.name, other_net_id, local_net_id)
                 routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=inter.ip_addr,
                                          inter_ip=inter.ip_addr, net_mask=inter.net_mask)
                 self.table.append(routing_row)
@@ -80,19 +80,22 @@ class RoutingTable:
         :param router: current router
         :return:
         '''
-        LOG.debug(router.name + ":********************init_routing_table***********************")
-        for other_router in self.router_list:
+        # for other_router in self.router_list:
+        #     for inter in router.intList:
+        #         self.init_update_row(other_router, inter)
+        # for other_host in self.host_list:
+        #     for inter in other_host.intList:
+        #         self.init_update_row(other_host, inter)
+        for other_router in self.router_list + self.host_list:
             for inter in router.intList:
                 self.init_update_row(other_router, inter)
-        for other_host in self.host_list:
-            for inter in other_host.intList:
-                self.init_update_row(other_host, inter)
+
 
     def find_shortest_path(self, dest_ip):
         match_rows = []
         for routing_row in self.table:
             if IPAddress(dest_ip) in self.get_network_id(routing_row):
-                if IPAddress(routing_row.next_ip.strip()) == IPAddress(dest_ip):  # send the data frame if its connected
+                if IPAddress(routing_row.dest_ip.strip()) == IPAddress(dest_ip):  # send the data frame if its connected
                     return routing_row
                 else:
                     match_rows.append(routing_row)

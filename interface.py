@@ -75,6 +75,7 @@ class Interface:
         if len(next_ip_n_packets) == 2:
             ip_data = IPDatagram("", "", data="")
             ip_data.unpack(next_ip_n_packets[1])
+            ip_data.ip_src_addr = socket.inet_aton(self.ip_addr)
             next_ip = next_ip_n_packets[0]
             # print self.router.name + ":" + self.name + " : send_packet1 " + ip_data.__repr__()
             dest_mac_row = self.router.arp_mac_table.get_mac_from_table(next_ip)
@@ -82,7 +83,7 @@ class Interface:
                 LOG.debug("-----------if-------send_frame--" + self.mac + "-------------------" + dest_mac_row.mac)
                 eth_frame = EthernetFrame(src_mac=ARPnMACTable.get_mac_pack(self.mac),
                                           dest_mac=ARPnMACTable.get_mac_pack(dest_mac_row.mac),
-                                          data=next_ip_n_packets[1])
+                                          data=ip_data.pack())
                 LOG.debug(self.router.name + ":" + self.name + " : send_packet2 " + eth_frame.__repr__())
                 self.send_frame(eth_frame.pack())
             else:
@@ -96,7 +97,7 @@ class Interface:
                 LOG.debug(self.router.name + " : " + self.name + " : " + "update_mac_table:" + EthernetFrame.eth_addr(
                     dest_mac))
                 self.router.arp_mac_table.update_mac(EthernetFrame.eth_addr(dest_mac), ip_data.ip_dest_addr, self.name)
-                self.send_packet(next_ip_n_packets[1])
+                self.send_packet(ip_data.pack())
 
     def receive_frame(self):
         LOG.debug(self.name + ":starting listening and receiving frame.....")

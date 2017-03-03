@@ -33,7 +33,7 @@ class RIPSimulator:
                 for router_row in self.router.route_table.table:
                     dest_ip = socket.inet_aton(router_row.dest_ip)
                     if router_row.inter_ip != inter.ip_addr:  # horizontal split
-                        entry = Entry(ip_addr=dest_ip, nex_ip=socket.inet_aton(inter.ip_addr))
+                        entry = Entry(ip_addr=dest_ip, nex_ip=socket.inet_aton(inter.ip_addr), metric=router_row.metric)
                         if entry.__repr__() not in [ent.__repr__() for ent in rip_packet.entry_list]:
                             rip_packet.entry_list.append(entry)
                 if len(rip_packet.entry_list) > 0:
@@ -67,7 +67,7 @@ class RIPSimulator:
             if socket.inet_ntoa(entry.ip_addr) != socket.inet_ntoa(udp_packet.dest_addr):
                 LOG.debug(self.router.name + "received table" + rip_packet.__repr__())
                 route_row = RoutingRow(dest_ip=socket.inet_ntoa(entry.ip_addr), next_ip=socket.inet_ntoa(entry.next_ip),
-                                       inter_ip=socket.inet_ntoa(udp_packet.dest_addr))
+                                       inter_ip=socket.inet_ntoa(udp_packet.dest_addr), metric=entry.metric)
                 self.router.route_table.update_table(route_row)
             else:
                 LOG.debug("****rip:update_routing_table***********dest:%s******next_ip:%s********************" %

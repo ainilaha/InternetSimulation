@@ -51,7 +51,7 @@ class ConfigMenu:
             ip = raw_input("Input IP address of int "+str(i+1)+":")
             router.intList[i].ip_addr = str(ip)
             i += 1
-        router.route_table.init_routing_table_router(router)
+        router.route_table.init_routing_table(router)
         router.show_config()
         router.save_config()
         router.arp_mac_table.show_table()
@@ -61,7 +61,7 @@ class ConfigMenu:
         print "Host Number is:" + value
         host_simulator = self.host_list[int(value) - 1]
         ip = raw_input("Input IP address of host:")
-        host_simulator.interface.ip_addr = str(ip)
+        host_simulator.intList[0].ip_addr = str(ip)
         host_simulator.show_config()
         host_simulator.save_config()
         host_simulator.arp_mac_table.show_table()
@@ -85,15 +85,6 @@ class ConfigMenu:
 
     def test_send(self):
         eth = self.create_test_frame()
-        # routing_row1 = RoutingRow(dest_ip="192.168.1.1", next_ip="10.10.10.2", inter_ip="10.10.10.1")
-        # self.host_list[0].route_table.table.append(routing_row1)
-        # routing_row2 = RoutingRow(dest_ip="192.168.1.3", next_ip="12.12.12.12", inter_ip="12.12.12.1")
-        # self.router_list[0].route_table.table.append(routing_row2)
-        #
-        # routing_row3 = RoutingRow(dest_ip="192.168.1.5", next_ip="192.168.1.8", inter_ip="192.168.1.1")
-        # self.router_list[1].route_table.table.append(routing_row3)
-        # routing_row4 = RoutingRow(dest_ip="192.168.1.10", next_ip="192.168.1.5", inter_ip="192.168.1.8")
-        # self.host_list[1].route_table.table.append(routing_row4)
         self.host_list[0].send_datagram(eth)
 
 

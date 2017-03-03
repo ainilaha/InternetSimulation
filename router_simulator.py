@@ -126,7 +126,10 @@ class RouterSimulator:
                         for interface in self.intList:
                             if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
                                 LOG.debug("matched interface=" + interface.name)
-                                interface.send_queue.put([match_row.next_ip, ip_data_packet])
+                                if match_row.metric == 0:
+                                    interface.send_queue.put([match_row.dest_ip, ip_data_packet])
+                                else:
+                                    interface.send_queue.put([match_row.next_ip, ip_data_packet])
                     else:
                         LOG.debug(self.name + ":**** dest ip =" + dest_ip + " not reachable or current router address!!")
 
