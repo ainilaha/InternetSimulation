@@ -1,3 +1,4 @@
+import multiprocessing
 from Tkinter import *
 from Queue import Empty
 
@@ -5,7 +6,7 @@ import struct
 
 
 class InternetChatDialog(Frame):
-    def __init__(self, name, master=None, queue=None):
+    def __init__(self, name, master=None, queue=multiprocessing.Queue()):
         Frame.__init__(self, master)
         self.name = name
         self.QUIT = Button(self)
@@ -22,23 +23,19 @@ class InternetChatDialog(Frame):
         self.inputText = Text(master, height=3, width=50)
         self.inputText.pack()
         self.pack(side=RIGHT)
-        self.queue = queue
-        self.target_index = -1
+        self.queue = multiprocessing.Queue()
+        self.target_ip = "0.0.0.0"
         self.master.after(100, self.check_queue_poll, self.queue)
 
     def check_queue_poll(self, c_queue):
-        ip = struct.pack('4B', 102, 106, 10, 10)
-        from ip import IPDatagram
-        ip_data2 = IPDatagram(ip, ip, data="")
         try:
             message = c_queue.get(0)
-            ip_data2.unpack(message)
-            self.historyText.insert(END, ip_data2.data)
+            self.historyText.insert(END, message)
         except Empty:
             pass
         finally:
             self.master.after(100, self.check_queue_poll, c_queue)
 
-    def set_target_index(self, i):
-        print "Try to connect Router" + str(i+1)
-        self.target_index = i
+    def set_target_ip(self, ip):
+        print "Try to connect Host" + ip
+        self.target_ip = ip

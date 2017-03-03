@@ -2,6 +2,7 @@ import menu
 import struct
 
 from arp_mac_table import ARPnMACTable
+from chat_window import ChatWindowCreator
 from ethernet import EthernetFrame
 from host_simulator import HostSimulator
 from ip import IPDatagram
@@ -101,6 +102,13 @@ class ConfigMenu:
         eth = self.create_test_frame()
         self.host_list[0].send_datagram(eth)
 
+    def start_chat_window(self):
+        print "--------------start_chat_window-----------"
+        chat_win = ChatWindowCreator()
+        chat_win.host_list = self.host_list
+        chat_win.new_window()
+        chat_win.mainloop()
+
 
 if __name__ == "__main__":
     conf = ConfigMenu()
@@ -110,7 +118,8 @@ if __name__ == "__main__":
                {"name": "Config Host IP", "function": conf.config_host_ip},
                {"name": "config Router IP", "function": conf.config_router_ip},
                {"name": "Show Routing Table", "function": conf.show_table},
-               {"name": "test_send", "function": conf.test_send}]
+               {"name": "test_send", "function": conf.test_send},
+               {"name": "Open Chat Window", "function": conf.start_chat_window}]
 
     mainMenu.addOptions(options)
     mainMenu.open()
