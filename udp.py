@@ -62,7 +62,8 @@ class UDPSimulator:
         for router in self.router.route_table.host_list + self.router.route_table.router_list:
             if router != self.router:
                 for inter in router.intList:
-                    if IPAddress(inter.ip_addr) in local_network_id and inter.ip_addr != interface.ip_addr:
+                    if inter.ip_addr != "0.0.0.0" and IPAddress(inter.ip_addr) in local_network_id and \
+                                    inter.ip_addr != interface.ip_addr:
                         udp_packet = UDPPacket(src_addr=socket.inet_aton(interface.ip_addr),
                                                dest_addr=socket.inet_aton(inter.ip_addr), data=rip_packet.pack())
                         ip_data = IPDatagram(ip_src_addr=socket.inet_aton(interface.ip_addr),

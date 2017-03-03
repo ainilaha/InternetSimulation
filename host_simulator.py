@@ -63,7 +63,7 @@ class HostSimulator:
                     rip_packet = RIPPacket(udp_packet)
                     rip_packet.unpack(udp_packet.data)
                     LOG.debug(
-                        self.name + "*******************888: receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
+                        self.name + ": receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
                     self.rip_simulator.received_queue.put(ip_data.data)
 
                 else:

@@ -55,24 +55,24 @@ class RoutingTable:
 
     def update_table(self, route_row):
         if route_row.__repr__() in [route_row_exist.__repr__() for route_row_exist in self.table]:
-            LOG.debug("re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++"+ route_row.__repr__())
+            LOG.debug("re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++" + route_row.__repr__())
         # discard the entry if destination address equal to local address to prevent routing loop
         # elif route_row.dest_ip not in [inter.ip_addr for inter in self.router.intList]:
         else:
             route_row.metric += 1
             self.table.append(route_row)
-            #self.show_table()
+            # self.show_table()
 
     def init_update_row(self, other_router, inter):
         local_net_id = IPNetwork(inter.ip_addr + "/" + inter.net_mask)
         for other_inter in other_router.intList:
-            other_net_id = IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask)
-            # if inter.ip_addr != other_inter.ip_addr and (other_net_id == local_net_id or other_router == self.router):
-            if other_net_id == local_net_id and (inter.ip_addr != other_inter.ip_addr or other_router == self.router):
-                print "XXXXXXXXXXXXXXXXXXXXXXXX router name = %s other id = %s   local id=%s" % (self.router.name, other_net_id, local_net_id)
-                routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=inter.ip_addr,
-                                         inter_ip=inter.ip_addr, net_mask=inter.net_mask)
-                self.table.append(routing_row)
+            if other_inter.ip_addr != "0.0.0.0":
+                other_net_id = IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask)
+                # if inter.ip_addr != other_inter.ip_addr and (other_net_id == local_net_id or other_router == self.router):
+                if other_net_id == local_net_id and (inter.ip_addr != other_inter.ip_addr or other_router == self.router):
+                    routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=inter.ip_addr,
+                                             inter_ip=inter.ip_addr, net_mask=inter.net_mask)
+                    self.table.append(routing_row)
 
     def init_routing_table(self, router):
         '''
@@ -88,8 +88,8 @@ class RoutingTable:
         #         self.init_update_row(other_host, inter)
         for other_router in self.router_list + self.host_list:
             for inter in router.intList:
-                self.init_update_row(other_router, inter)
-
+                if inter.ip_addr != "0.0.0.0":
+                    self.init_update_row(other_router, inter)
 
     def find_shortest_path(self, dest_ip):
         match_rows = []

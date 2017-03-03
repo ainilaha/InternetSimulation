@@ -29,16 +29,17 @@ class RIPSimulator:
         LOG.info(self.router.name + ":starting sending RIP UDP.....")
         while True:
             for inter in self.router.intList:
-                rip_packet = RIPPacket()
-                for router_row in self.router.route_table.table:
-                    dest_ip = socket.inet_aton(router_row.dest_ip)
-                    if router_row.inter_ip != inter.ip_addr:  # horizontal split
-                        entry = Entry(ip_addr=dest_ip, nex_ip=socket.inet_aton(inter.ip_addr), metric=router_row.metric)
-                        if entry.__repr__() not in [ent.__repr__() for ent in rip_packet.entry_list]:
-                            rip_packet.entry_list.append(entry)
-                if len(rip_packet.entry_list) > 0:
-                    LOG.debug(self.router.name + "inter:"+inter.ip_addr + "*************send table:" + rip_packet.__repr__())
-                    self.udp_simulator.send_multicast(rip_packet, inter)
+                if inter.ip_addr != "0.0.0.0":
+                    rip_packet = RIPPacket()
+                    for router_row in self.router.route_table.table:
+                        dest_ip = socket.inet_aton(router_row.dest_ip)
+                        if router_row.inter_ip != inter.ip_addr:  # horizontal split
+                            entry = Entry(ip_addr=dest_ip, nex_ip=socket.inet_aton(inter.ip_addr), metric=router_row.metric)
+                            if entry.__repr__() not in [ent.__repr__() for ent in rip_packet.entry_list]:
+                                rip_packet.entry_list.append(entry)
+                    if len(rip_packet.entry_list) > 0:
+                        LOG.debug(self.router.name + "inter:"+inter.ip_addr + "*************send table:" + rip_packet.__repr__())
+                        self.udp_simulator.send_multicast(rip_packet, inter)
 
             time.sleep(RIP_REFRESH_TIME)
 

@@ -124,7 +124,7 @@ class RouterSimulator:
                     if match_row:
                         LOG.debug(self.name + ":matched interface IP:" + match_row.inter_ip)
                         for interface in self.intList:
-                            if IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
+                            if interface.ip_addr != "0.0.0.0" and IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
                                 LOG.debug("matched interface=" + interface.name)
                                 if match_row.metric == 0:
                                     interface.send_queue.put([match_row.dest_ip, ip_data_packet])
@@ -141,9 +141,10 @@ class RouterSimulator:
     def init_arp_mac_table(self):
         self.arp_mac_table.mac_table = []
         for inter in self.intList:
-            arp_n_mac_row = ARPnMACRow(ip_addr=inter.ip_addr, mac=inter.mac, mac_type=1,
-                                       inter_name=inter.name, age=-1)
-            self.arp_mac_table.mac_table.append(arp_n_mac_row)
+            if inter.ip_addr != "0.0.0.0":
+                arp_n_mac_row = ARPnMACRow(ip_addr=inter.ip_addr, mac=inter.mac, mac_type=1,
+                                           inter_name=inter.name, age=-1)
+                self.arp_mac_table.mac_table.append(arp_n_mac_row)
 
 
 def main():

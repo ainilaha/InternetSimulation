@@ -66,9 +66,11 @@ class Interface:
     def send_frame(self, eth_frame):
         for router in self.router.arp_mac_table.router_list:
             for inter in router.intList:
-                inter.received_frame_queue.put(eth_frame)
+                if inter.ip_addr != "0.0.0.0":
+                    inter.received_frame_queue.put(eth_frame)
         for host in self.router.arp_mac_table.host_list:
-            host.intList[0].received_frame_queue.put(eth_frame)
+            if host.intList[0].ip_addr != "0.0.0.0":
+                host.intList[0].received_frame_queue.put(eth_frame)
 
     def send_packet(self, next_ip_n_packets):
 
@@ -140,9 +142,11 @@ class Interface:
 
         for router in self.router.arp_mac_table.router_list:
             for inter in router.intList:
-                inter.received_frame_queue.put(phy_data)
+                if inter.ip_addr != "0.0.0.0":
+                    inter.received_frame_queue.put(phy_data)
         for host in self.router.arp_mac_table.host_list:
-            host.intList[0].received_frame_queue.put(phy_data)
+            if host.intList[0].ip_addr != "0.0.0.0":
+                host.intList[0].received_frame_queue.put(phy_data)
         while True:
             try:
                 packet = self.receive_arp_queue.get(0)
