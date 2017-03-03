@@ -27,6 +27,7 @@ class HostSimulator:
         self.intList = []  # there is only on interface in host
         self.name = name
         self.received_frame_data_queue = multiprocessing.Queue()
+        self.tcp_ip_queue = multiprocessing.Queue()
         self.chat_window = None
         self.route_table = RoutingTable(router=self)
         self.arp_mac_table = ARPnMACTable()
@@ -65,7 +66,9 @@ class HostSimulator:
                     LOG.debug(
                         self.name + ": receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
                     self.rip_simulator.received_queue.put(ip_data.data)
-
+                elif ip_data.ip_proto == socket.IPPROTO_TCP:
+                    self.tcp_ip_queue.put(ip_data_packet)
+                    LOG.info(self.name + ": receive tcp ip packets=" + ip_data.__repr__())
                 else:
                     LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window
                     self.chat_window.queue.put(ip_data.data)
