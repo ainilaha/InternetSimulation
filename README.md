@@ -4,6 +4,28 @@ so that I it can run on top of the simulated virtual systems.
 
 This simulation run on top of python2.7 and using python structs lib serialize packets and frame
 
+**Interface:**
+
+`````
+    - Simulate an NIC and hold an IPv4 address and MAC address
+    - Threads send and receive IP packets
+    - Threads request and response ARP
+`````
+
+**Host:**
+`````
+    - Attached an chat window to represent source and destination
+    - Hold an interface to simulate NIC 
+    - Running a RIP to learn routing table from the network
+`````
+
+**Router:**
+`````
+    - Hold an interface to simulate NIC 
+    - Running a RIP to learn routing table from the network
+    - fowaring IP packets
+`````
+
 
 **library install**
 ``
@@ -19,6 +41,5 @@ Each router has more than one threads to run listening to receive,sending and ot
 `````
     - Internet wire - process pipe and queue
     - Interface: type , name, Mac  and IP address
-    - Source and destination (chat window)
     - Routing table
 `````
