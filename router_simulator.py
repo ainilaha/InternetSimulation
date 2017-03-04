@@ -86,8 +86,8 @@ class RouterSimulator:
 
     def show_config(self):
         for port in self.intList:
-            LOG.info( port.name + " : " + str(port.type) + " : " + port.ip_addr + " : " + port.mac + "\n")
-            LOG.info( "----------------------------------------\n")
+            LOG.info(port.name + " : " + str(port.type) + " : " + port.ip_addr + " : " + port.mac + "\n")
+            LOG.info("----------------------------------------\n")
 
     def receive_frame(self):
         LOG.info(self.name + ":starting listening and receiving frame.....")
@@ -124,7 +124,8 @@ class RouterSimulator:
                     if match_row:
                         LOG.debug(self.name + ":matched interface IP:" + match_row.inter_ip)
                         for interface in self.intList:
-                            if interface.ip_addr != "0.0.0.0" and IPAddress(interface.ip_addr) == IPAddress(match_row.inter_ip):
+                            if interface.ip_addr != "0.0.0.0" and IPAddress(interface.ip_addr) == \
+                                    IPAddress(match_row.inter_ip):
                                 LOG.debug("matched interface=" + interface.name)
                                 if match_row.metric == 0:
                                     interface.send_queue.put([match_row.dest_ip, ip_data_packet])
