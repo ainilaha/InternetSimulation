@@ -1,44 +1,39 @@
-import socket
+import os
 from Tkinter import *
 import Tkinter as tK
 
 import struct
 
 from ip import IPDatagram
+from logger import LOG
 from window import InternetChatDialog
-import multiprocessing
 from functools import partial
 
 
 class ChatWindow(InternetChatDialog):
-    def __init__(self, name, master=None, queue=None):
-        InternetChatDialog.__init__(self, name, master=master, queue=queue)
+    def __init__(self, name, master=None, host=None):
+        InternetChatDialog.__init__(self, name, master=master, host=host)
         self.send_msg["command"] = self.send_message
         self.host_list = []
-        self.host = None
 
     def send_message(self):
         message = self.name + ": " + self.inputText.get(1.0, END)
         self.historyText.insert(END, message)
         self.inputText.delete(1.0, END)
-        if self.target_ip != "0.0.0.0":
+        if self.target_ip != "0.0.0.0" and self.current_socket:
             # create data packet and put is host send queue
-            print "local ip=" + self.host.intList[0].ip_addr
-            print "dec ip=" + self.target_ip
-            message = str(message).strip()
-            ip_data = IPDatagram(ip_src_addr=socket.inet_aton(self.host.intList[0].ip_addr),
-                                 ip_dest_addr=socket.inet_aton(self.target_ip),
-                                 data=message)
-
-            self.host.send_datagram(ip_data.pack())
+            message = str(message + os.linesep).strip()
+            self.current_socket.send(data=message)
+        else:
+            LOG.warning("There is no socket connected!")
 
     def enter_keys(self, event):
         self.send_message()
 
     @staticmethod
-    def create_chat_window(local_host, host_list, queue):
+    def create_chat_window(local_host, host_list):
         root = Tk()
-        app = ChatWindow(local_host.name, master=root, queue=queue)
+        app = ChatWindow(local_host.name, master=root, host=local_host)
         app.host_list = host_list
         app.host = local_host
         app.inputText.bind("<Return>", app.enter_keys)
@@ -69,12 +64,8 @@ class ChatWindowCreator(Frame):
         # self.button1.pack()
 
     def new_window(self):
-        print "--------------------------new_window-----------------------"
         for host_simulator in self.host_list:
-            print "--------------------------new_window-------host_simulator----------------" + host_simulator.name
-            queue = multiprocessing.Queue()
-            queue.cancel_join_thread()  # or else thread that puts data will not term
-            win_chat = ChatWindow.create_chat_window(host_simulator, self.host_list, queue)
+            win_chat = ChatWindow.create_chat_window(host_simulator, self.host_list)
             host_simulator.chat_window = win_chat
 
 

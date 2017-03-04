@@ -71,7 +71,7 @@ class HostSimulator:
                     LOG.info(self.name + ": receive tcp ip packets=" + ip_data.__repr__())
                 else:
                     LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window
-                    self.chat_window.queue.put(ip_data.data)
+                    self.chat_window.queue.put(ip_data_packet)
             except Empty:
                 pass
             finally:
