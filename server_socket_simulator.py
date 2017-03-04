@@ -3,20 +3,22 @@ import socket
 from Queue import Empty
 from collections import Counter
 
+import time
+
 from ip import IPDatagram
 from logger import LOG
 from tcp import TCPSegment
 
 
-class SocketSimulator:
+class ServerSocketSimulator:
     def __init__(self, host=None, timeout=180, tick=2):
         # IP
         self.host = host
         self.ip_src = socket.inet_aton(self.host.intList[0].ip_addr)
         self.ip_dest = ''
         # port
-        self.port_src = random.randint(0x7530, 0xffff)
-        self.port_dest = 80
+        self.port_src = 80
+        self.dest_port = 0
         # TCP
         self.tcp_seq = random.randint(0x0001, 0xffff)
         self.tcp_ack_seq = 0
@@ -31,14 +33,30 @@ class SocketSimulator:
         self.metrics = Counter(send=0, recv=0, erecv=0,
                                retry=0, cksumfail=0)
 
-    def connect(self, (dest_ip, port)):
+    def accept(self, (request_ip, port)):
         '''
         Connect to the given hostname and port
         '''
-        self.ip_dest = socket.inet_aton(dest_ip)
-        self.port_dest = port
+        self.ip_dest = socket.inet_aton(request_ip)
+        self.dest_port = port
         # 3-way handshake
-        self._tcp_handshake()
+        tcp_segment = self.listen()
+        self._tcp_handshake(tcp_segment)
+
+    def bind(self):
+        self.ip_src = socket.inet_aton(self.host.intList[0].ip_addr)
+
+    def listen(self):
+        LOG.info(self.host.name + " : TCP server socket listening...")
+        time.sleep(0.01)
+        while True:
+            try:
+                tcp_segment = self._recv(max_retry=self.max_retry)
+                return tcp_segment
+            except Empty:
+                pass
+            finally:
+                time.sleep(0.1)
 
     def send(self, data=''):
         '''
@@ -107,22 +125,20 @@ class SocketSimulator:
         self._tcp_teardown()
         # self.socket.close() remove the host
 
-    def _tcp_handshake(self):
+    def _tcp_handshake(self, tcp_segment):
         '''
         Wrap the TCP 3-way handshake procedure
         '''
-        self._send(syn=1)
-        tcp_segment = self._recv(self.max_retry)
         # check timeout
         if tcp_segment is None:
-            raise RuntimeError('TCP handshake failed, connection timeout')
-        # check server ACK | SYN
-        if not (tcp_segment.tcp_fack and tcp_segment.tcp_fsyn):
-            raise RuntimeError('TCP handshake failed, bad server response')
-        # save next ACK seq
+            raise RuntimeError('TCP Server handshake failed, connection timeout')
+        # check server SYN
+        if not tcp_segment.tcp_fsyn:
+            raise RuntimeError('TCP Server handshake failed, bad server response')
+        # send back
         self.tcp_seq = tcp_segment.tcp_ack_seq
-        self.tcp_ack_seq = tcp_segment.tcp_seq + 1
-        self._send(ack=1)
+        self.tcp_ack_seq = tcp_segment.tcp_seq
+        self._send(syn=self.tcp_seq, ack=self.tcp_ack_seq)
 
     def _send(self, data='', retry=False, urg=0, ack=0, psh=0,
               rst=0, syn=0, fin=0):
@@ -137,7 +153,7 @@ class SocketSimulator:
             tcp_segment = TCPSegment(ip_src_addr=self.ip_src,
                                      ip_dest_addr=self.ip_dest,
                                      tcp_src_port=self.port_src,
-                                     tcp_dest_port=self.port_dest,
+                                     tcp_dest_port=self.dest_port,
                                      tcp_seq=self.tcp_seq,
                                      tcp_ack_seq=self.tcp_ack_seq,
                                      tcp_furg=urg, tcp_fack=ack, tcp_fpsh=psh,
@@ -177,7 +193,7 @@ class SocketSimulator:
                 ip_data = ip_datagram.data
                 tcp_segment = TCPSegment(self.ip_src, self.ip_dest)
                 tcp_segment.unpack(ip_data)
-                print self.host.name + "tcp==============" + tcp_segment.__repr__()
+                print self.host.name + "tcp==server============" + tcp_segment.__repr__()
                 # TCP filtering
                 if not self._tcp_expected(tcp_segment):
                     continue
