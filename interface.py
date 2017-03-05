@@ -77,7 +77,6 @@ class Interface:
         if len(next_ip_n_packets) == 2:
             ip_data = IPDatagram("", "", data="")
             ip_data.unpack(next_ip_n_packets[1])
-            ip_data.ip_src_addr = socket.inet_aton(self.ip_addr)
             next_ip = next_ip_n_packets[0]
             # print self.router.name + ":" + self.name + " : send_packet1 " + ip_data.__repr__()
             dest_mac_row = self.router.arp_mac_table.get_mac_from_table(next_ip)

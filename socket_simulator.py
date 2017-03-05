@@ -48,7 +48,7 @@ class SocketSimulator:
         send_length = 0
         total_len = len(data)
         while send_length < total_len:
-            self._send(data[send_length:(send_length + self.tcp_cwind)], ack=1)
+            self._send(data[send_length:(send_length + self.tcp_cwind)], ack=1, psh=1)
             # update TCP seq
             if (send_length + self.tcp_cwind) > total_len:
                 self.tcp_seq += (total_len - send_length)
@@ -117,6 +117,8 @@ class SocketSimulator:
         if tcp_segment is None:
             raise RuntimeError('TCP handshake failed, connection timeout')
         # check server ACK | SYN
+        print "-------------tcp_segment.tcp_fac=%d-----tcp_segment.tcp_fsy=%d--------------------------------" % \
+              (tcp_segment.tcp_fack,tcp_segment.tcp_fsyn)
         if not (tcp_segment.tcp_fack and tcp_segment.tcp_fsyn):
             raise RuntimeError('TCP handshake failed, bad server response')
         # save next ACK seq
@@ -143,12 +145,21 @@ class SocketSimulator:
                                      tcp_furg=urg, tcp_fack=ack, tcp_fpsh=psh,
                                      tcp_frst=rst, tcp_fsyn=syn, tcp_ffin=fin,
                                      tcp_adwind=self.tcp_cwind, data=data)
+            tcp_segment.pack()
             ip_data = tcp_segment.pack()
+            print self.host.name + ":*************send TCP************" + tcp_segment.__repr__()
             # build IP datagram
             ip_datagram = IPDatagram(ip_src_addr=self.ip_src,
                                      ip_dest_addr=self.ip_dest,
                                      data=ip_data)
+
             eth_data = ip_datagram.pack()
+            ip_datagram2 = IPDatagram(ip_dest_addr='', ip_src_addr='')
+            ip_datagram2.unpack(eth_data)
+            tcp_segment2 = TCPSegment(ip_src_addr='', ip_dest_addr='')
+            tcp_segment2.unpack(ip_datagram.data)
+            print self.host.name + ":********tcp_segment2*****send TCP************" + tcp_segment2.__repr__()
+            print self.host.name + ":********tcp_segment2*****send TCP* src IP***********" + socket.inet_ntoa(tcp_segment.ip_src_addr)
             self.metrics['send'] += 1
             self.prev_data = eth_data
             return self.host.send_datagram(eth_data)
@@ -158,6 +169,7 @@ class SocketSimulator:
         Receive a packet with the given buffer size, will not retry
         for per-packet failure until using up max retry
         '''
+        print self.host.name + "----------client-------------_recv---------------------------------"
         while max_retry:
             self.metrics['recv'] += 1
             # wait with timeout for the readable socket
@@ -167,6 +179,7 @@ class SocketSimulator:
                 ip_bytes = self.host.tcp_ip_queue.get()
                 ip_datagram = IPDatagram(self.ip_src, self.ip_dest)
                 ip_datagram.unpack(ip_bytes)
+                print self.host.name + "-----client------------------_recv---------" + ip_datagram.__repr__()
                 # IP filtering
                 if not self._ip_expected(ip_datagram):
                     continue
@@ -177,7 +190,8 @@ class SocketSimulator:
                 ip_data = ip_datagram.data
                 tcp_segment = TCPSegment(self.ip_src, self.ip_dest)
                 tcp_segment.unpack(ip_data)
-                print self.host.name + "tcp==============" + tcp_segment.__repr__()
+                tcp_segment.pack()
+                print self.host.name + "tcp=======client=======" + tcp_segment.__repr__()
                 # TCP filtering
                 if not self._tcp_expected(tcp_segment):
                     continue
@@ -205,7 +219,7 @@ class SocketSimulator:
             return False
         elif ip_datagram.ip_src_addr != self.ip_dest:
             return False
-        elif ip_datagram.ip_proto != s.IPPROTO_TCP:
+        elif ip_datagram.ip_proto != socket.IPPROTO_TCP:
             return False
         else:
             return True

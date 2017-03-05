@@ -33,6 +33,9 @@ Simple Python model for a TCP segment
 
 
 class TCPSegment:
+    '''
+    Simple Python model for a TCP segment
+    '''
     def __init__(self, ip_src_addr, ip_dest_addr, tcp_src_port=12138,
                  tcp_dest_port=80, tcp_seq=1, tcp_ack_seq=0, tcp_doff=5,
                  tcp_furg=0, tcp_fack=1, tcp_fpsh=0, tcp_frst=0, tcp_fsyn=0,
@@ -42,9 +45,9 @@ class TCPSegment:
         # all IP addresses has been encoded
         self.ip_src_addr = ip_src_addr
         self.ip_dest_addr = ip_dest_addr
-        self.zeros = 0  # padding placeholder for protocol
+        self.zeros = 0      # padding placeholder for protocol
         self.protocol = socket.IPPROTO_TCP
-        self.tcp_len = 0  # the length of TCP headers and data, computed
+        self.tcp_len = 0    # the length of TCP headers and data, computed
         # vars for TCP header
         self.tcp_src_port = tcp_src_port
         self.tcp_dest_port = tcp_dest_port
@@ -62,7 +65,6 @@ class TCPSegment:
         self.tcp_cksum = 0  # to be computed
         self.tcp_urg_ptr = tcp_urg_ptr
         self.tcp_opts = tcp_opts
-        # all HTTP stuff goes here
         self.data = data
 
     def __repr__(self):
@@ -70,13 +72,13 @@ class TCPSegment:
                 '[src_port: %d, dest_port: %d, seq: %d, ack_seq: %d,' +
                 ' doff: %d, resvd: %d, urg: %d, ack: %d, psh: %d, rst: %d,' +
                 ' syn: %d, fin: %d, adwind: %d, checksum: 0x%04x, ' +
-                ' urg_ptr: %d, options: %s, len(HTTP): %d]') \
-               % (self.tcp_src_port, self.tcp_dest_port, self.tcp_seq,
-                  self.tcp_ack_seq, self.tcp_doff, self.tcp_resvd, self.tcp_furg,
-                  self.tcp_fack, self.tcp_fpsh, self.tcp_frst, self.tcp_fsyn,
-                  self.tcp_ffin, self.tcp_adwind, self.tcp_cksum,
-                  self.tcp_urg_ptr, 'Yes' if self.tcp_opts else None,
-                  len(self.data))
+                ' urg_ptr: %d, options: %s, len(data): %d,data=%s]') \
+            % (self.tcp_src_port, self.tcp_dest_port, self.tcp_seq,
+               self.tcp_ack_seq, self.tcp_doff, self.tcp_resvd, self.tcp_furg,
+               self.tcp_fack, self.tcp_fpsh, self.tcp_frst, self.tcp_fsyn,
+               self.tcp_ffin, self.tcp_adwind, self.tcp_cksum,
+               self.tcp_urg_ptr, 'Yes' if self.tcp_opts else None,
+               len(self.data), self.data)
         return repr
 
     def _shift_flags(self, fin, syn, rst, psh, ack, urg):
@@ -84,7 +86,7 @@ class TCPSegment:
         Shift the TCP flags to their bitwise locations
         '''
         return fin + (syn << 1) + (rst << 2) + (psh << 3) \
-               + (ack << 4) + (urg << 5)
+            + (ack << 4) + (urg << 5)
 
     def _deshift_flags(self, tcp_flags):
         '''
@@ -134,8 +136,10 @@ class TCPSegment:
         '''
         tcp_hdr_buf = self._tcp_headers_buf()
         tcp_psh = self._tcp_pseudo_headers(tcp_hdr_buf.raw)
-        self.tcp_cksum = checksum(''.join(
-            [tcp_psh, tcp_hdr_buf.raw, self.data]))
+        # self.tcp_cksum = checksum(''.join(
+        #     [tcp_psh, tcp_hdr_buf.raw, self.data]))
+        check_data = ''.join([tcp_psh, tcp_hdr_buf.raw, self.data])
+        self.tcp_cksum = checksum(check_data)
         pack_into('!H', tcp_hdr_buf,
                   calcsize(TCP_HDR_FMT[:8]),
                   self.tcp_cksum)
@@ -161,8 +165,8 @@ class TCPSegment:
         # parse TCP flags
         tcp_flags = hdr_fields[5]
         self.tcp_ffin, self.tcp_fsyn, self.tcp_frst, \
-        self.tcp_fpsh, self.tcp_fack, \
-        self.tcp_furg = self._deshift_flags(tcp_flags)
+            self.tcp_fpsh, self.tcp_fack, \
+            self.tcp_furg = self._deshift_flags(tcp_flags)
         # process the TCP options if there are
         # currently just skip it
         if self.tcp_doff > 5:

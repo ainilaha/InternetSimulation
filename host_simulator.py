@@ -19,6 +19,7 @@ from rip_packet import RIPPacket
 from rip_simulator import RIPSimulator
 from router_simulator import Interface
 from routing_table import RoutingTable
+from tcp import TCPSegment
 from udp import UDPPacket
 
 
@@ -47,6 +48,18 @@ class HostSimulator:
         interface.type = 1
         self.intList.append(interface)
         self.load_config()
+        # self.teeest = threading.Thread(target=self.test_recv)
+        # self.teeest.start()
+
+    def test_recv(self):
+        try:
+            # process Ethernet frame
+            ip_bytes = self.tcp_ip_queue.get()
+            ip_datagram = IPDatagram(ip_dest_addr='',ip_src_addr='')
+            ip_datagram.unpack(ip_bytes)
+
+        except Empty:
+            pass
 
     def receive_datagram(self):
         LOG.info(self.name + ":starting listening and routing...")
@@ -67,7 +80,11 @@ class HostSimulator:
                         self.name + ": receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
                     self.rip_simulator.received_queue.put(ip_data.data)
                 elif ip_data.ip_proto == socket.IPPROTO_TCP:
-                    self.tcp_ip_queue.put(ip_data_packet)
+                    tcp_segment = TCPSegment(ip_src_addr='', ip_dest_addr='', data='')
+                    tcp_segment.unpack(ip_data.data)
+                    if tcp_segment.tcp_fpsh:
+                        self.chat_window.queue.put(tcp_segment.data)
+                    self.tcp_ip_queue.put(ip_data.pack())
                     LOG.info(self.name + ": receive tcp ip packets=" + ip_data.__repr__())
                 else:
                     LOG.info(self.name + ": receive ip packets=" + ip_data.__repr__())  # will print it on chat window

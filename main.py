@@ -108,6 +108,11 @@ class ConfigMenu:
         chat_win.host_list = self.host_list
         chat_win.new_window()
         chat_win.mainloop()
+        for win_host in self.host_list:
+            win_host.chat_window.receiving_message.join()
+            win_host.chat_window.server_accept.join()
+
+
 
 
 if __name__ == "__main__":

@@ -18,11 +18,11 @@ class ChatWindow(InternetChatDialog):
 
     def send_message(self):
         message = self.name + ": " + self.inputText.get(1.0, END)
+        message = os.linesep + str(message).strip() + os.linesep
         self.historyText.insert(END, message)
         self.inputText.delete(1.0, END)
-        if self.target_ip != "0.0.0.0" and self.current_socket:
+        if self.current_socket:
             # create data packet and put is host send queue
-            message = str(message + os.linesep).strip()
             self.current_socket.send(data=message)
         else:
             LOG.warning("There is no socket connected!")
@@ -64,9 +64,15 @@ class ChatWindowCreator(Frame):
         # self.button1.pack()
 
     def new_window(self):
+        server = False
         for host_simulator in self.host_list:
             win_chat = ChatWindow.create_chat_window(host_simulator, self.host_list)
             host_simulator.chat_window = win_chat
+            if server:
+                win_chat.server_accept.start()
+                server = False
+            else:
+                server = True
 
 
 def put_message_queue(queue, message):
