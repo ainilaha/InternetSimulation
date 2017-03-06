@@ -10,7 +10,7 @@ from rip_packet import Entry, RIPPacket
 from routing_table import RoutingRow
 from udp import UDPSimulator, UDPPacket
 
-RIP_REFRESH_TIME = 5  # its refresh 30 seconds in real network, I set it as 5 for conventing demo
+RIP_REFRESH_TIME = 2  # its refresh 30 seconds in real network, I set it as 5 for conventing demo
 
 
 class RIPSimulator:

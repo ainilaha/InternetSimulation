@@ -19,7 +19,6 @@ from rip_packet import RIPPacket
 from rip_simulator import RIPSimulator
 from router_simulator import Interface
 from routing_table import RoutingTable
-from tcp import TCPSegment
 from udp import UDPPacket
 
 
@@ -80,10 +79,11 @@ class HostSimulator:
                         self.name + ": receive rip packets=" + rip_packet.__repr__())  # go to UDP k.o
                     self.rip_simulator.received_queue.put(ip_data.data)
                 elif ip_data.ip_proto == socket.IPPROTO_TCP:
-                    tcp_segment = TCPSegment(ip_src_addr='', ip_dest_addr='', data='')
-                    tcp_segment.unpack(ip_data.data)
-                    if tcp_segment.tcp_fpsh:
-                        self.chat_window.queue.put(tcp_segment.data)
+                    # tcp_segment = TCPSegment(ip_src_addr='', ip_dest_addr='', data='')
+                    # tcp_segment.unpack(ip_data.data)
+                    # if tcp_segment.tcp_fpsh:
+                    #     # should use similar _recv from socket to segment
+                    #     self.chat_window.queue.put(tcp_segment.data)
                     self.tcp_ip_queue.put(ip_data.pack())
                     LOG.info(self.name + ": receive tcp ip packets=" + ip_data.__repr__())
                 else:

@@ -40,6 +40,7 @@ class TCPSegment:
                  tcp_dest_port=80, tcp_seq=1, tcp_ack_seq=0, tcp_doff=5,
                  tcp_furg=0, tcp_fack=1, tcp_fpsh=0, tcp_frst=0, tcp_fsyn=0,
                  tcp_ffin=0, tcp_adwind=1, tcp_urg_ptr=0, tcp_opts=None,
+
                  data=''):
         # vars for TCP pseudo-header
         # all IP addresses has been encoded
@@ -65,6 +66,7 @@ class TCPSegment:
         self.tcp_cksum = 0  # to be computed
         self.tcp_urg_ptr = tcp_urg_ptr
         self.tcp_opts = tcp_opts
+        # all HTTP stuff goes here
         self.data = data
 
     def __repr__(self):
@@ -72,13 +74,13 @@ class TCPSegment:
                 '[src_port: %d, dest_port: %d, seq: %d, ack_seq: %d,' +
                 ' doff: %d, resvd: %d, urg: %d, ack: %d, psh: %d, rst: %d,' +
                 ' syn: %d, fin: %d, adwind: %d, checksum: 0x%04x, ' +
-                ' urg_ptr: %d, options: %s, len(data): %d,data=%s]') \
+                ' urg_ptr: %d, options: %s, len(HTTP): %d]') \
             % (self.tcp_src_port, self.tcp_dest_port, self.tcp_seq,
                self.tcp_ack_seq, self.tcp_doff, self.tcp_resvd, self.tcp_furg,
                self.tcp_fack, self.tcp_fpsh, self.tcp_frst, self.tcp_fsyn,
                self.tcp_ffin, self.tcp_adwind, self.tcp_cksum,
                self.tcp_urg_ptr, 'Yes' if self.tcp_opts else None,
-               len(self.data), self.data)
+               len(self.data))
         return repr
 
     def _shift_flags(self, fin, syn, rst, psh, ack, urg):
@@ -136,10 +138,8 @@ class TCPSegment:
         '''
         tcp_hdr_buf = self._tcp_headers_buf()
         tcp_psh = self._tcp_pseudo_headers(tcp_hdr_buf.raw)
-        # self.tcp_cksum = checksum(''.join(
-        #     [tcp_psh, tcp_hdr_buf.raw, self.data]))
-        check_data = ''.join([tcp_psh, tcp_hdr_buf.raw, self.data])
-        self.tcp_cksum = checksum(check_data)
+        self.tcp_cksum = checksum(''.join(
+            [tcp_psh, tcp_hdr_buf.raw, self.data]))
         pack_into('!H', tcp_hdr_buf,
                   calcsize(TCP_HDR_FMT[:8]),
                   self.tcp_cksum)

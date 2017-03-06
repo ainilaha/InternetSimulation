@@ -109,8 +109,8 @@ class ConfigMenu:
         chat_win.new_window()
         chat_win.mainloop()
         for win_host in self.host_list:
-            win_host.chat_window.receiving_message.join()
             win_host.chat_window.server_accept.join()
+            win_host.chat_window.current_socket.receiving_tcp.join()
 
 
 

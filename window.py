@@ -3,6 +3,7 @@ import threading
 from Tkinter import *
 from Queue import Empty
 
+import time
 
 from logger import LOG
 from server_socket_simulator import ServerSocketSimulator
@@ -17,7 +18,7 @@ class InternetChatDialog(Frame):
         self.QUIT = Button(self)
         self.QUIT["text"] = "QUIT"
         self.QUIT["fg"] = "red"
-        self.QUIT["command"] = self.quit
+        self.QUIT["command"] = self.quit_connect
         self.QUIT.pack({"side": "left"})
         self.send_msg = Button(self)
         self.send_msg["text"] = "Send",
@@ -28,14 +29,14 @@ class InternetChatDialog(Frame):
         self.inputText = Text(master, height=3, width=50)
         self.inputText.pack()
         self.pack(side=RIGHT)
-        self.queue = multiprocessing.Queue()
+        self.message_queue = multiprocessing.Queue()
         self.current_socket = None
         self.server_socket = None
         self.client_socket = None
-
         self.server_accept = threading.Thread(target=self.keep_accept)
         # self.server_accept.start()
-        self.master.after(100, self.check_queue_poll, self.queue)
+        self.master.after(100, self.check_queue_poll, self.message_queue)
+        self.message_queue.put("This is:" + self.host.name)
 
     def check_queue_poll(self, c_queue):
         try:
@@ -55,10 +56,11 @@ class InternetChatDialog(Frame):
         self.server_socket = ServerSocketSimulator(self.host)
         self.server_socket.accept()
         self.current_socket = self.server_socket
-        if self.client_socket:
+        if not self.client_socket:
+            self.current_socket = self.server_socket
+        else:
             self.client_socket.close()
             self.client_socket = None
-        self.current_socket = self.server_socket
 
     def set_target_ip(self, ip):
         LOG.info(self.host.name + ": sending TCP connect to: " + str(ip))
@@ -68,3 +70,10 @@ class InternetChatDialog(Frame):
             self.server_socket.close()
             self.server_socket = None
         self.current_socket = self.client_socket
+
+    def quit_connect(self):
+        LOG.info(self.host.name + ":closing the connection...........................")
+        if self.current_socket:
+            self.current_socket.close()
+            self.current_socket = None
+        LOG.info(self.host.name + ":connection has been closed...........................")
