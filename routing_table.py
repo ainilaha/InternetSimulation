@@ -21,6 +21,7 @@ from netaddr import IPNetwork
 
 from logger import LOG
 
+ENTRY_EXPIRE_TIME = 30*60  # 30 minutes
 
 class RoutingRow:
     def __init__(self, dest_ip, next_ip, inter_ip, net_mask="255.255.255.0", metric=0, time=-1):
@@ -42,6 +43,7 @@ class RoutingTable:
         self.router_list = []
         self.host_list = []
         self.router = router
+        self.timer_list = []
 
     @staticmethod
     def get_network_id(routing_row):
@@ -68,7 +70,6 @@ class RoutingTable:
         for other_inter in other_router.intList:
             if other_inter.ip_addr != "0.0.0.0":
                 other_net_id = IPNetwork(other_inter.ip_addr + "/" + other_inter.net_mask)
-                # if inter.ip_addr != other_inter.ip_addr and (other_net_id == local_net_id or other_router == self.router):
                 if other_net_id == local_net_id and (inter.ip_addr != other_inter.ip_addr or other_router == self.router):
                     routing_row = RoutingRow(dest_ip=other_inter.ip_addr, next_ip=inter.ip_addr,
                                              inter_ip=inter.ip_addr, net_mask=inter.net_mask)

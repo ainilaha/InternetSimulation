@@ -11,6 +11,20 @@ This simulation run on top of python2.7 and using python structs lib serialize p
     - pip install netaddr : to manipulation ip and mac address
     - python main.py
 `````
+2. run and command
+`````
+python main.py
+
+1. Create Router
+2. Config Host IP   # input IPv4 after get in  the IP address are loaded from config file but can reconfig
+3. config Router IP  
+4. Show Routing Table  # view routing table and dynamic learning
+5. Show MAC/ARP Table  # view MAC/ARP table and dynamic learning
+6. Select Servers
+7. Open Chat Window
+>>> 1   # eg, choose 1 to creat routers and hosts
+
+`````
 
 **Interface:**
 

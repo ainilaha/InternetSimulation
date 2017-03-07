@@ -85,7 +85,7 @@ class ConfigMenu:
         else:
             LOG.info("%s is an empty or illegal ip address!" % ip)
 
-    def show_table(self):
+    def show_routing_table(self):
         # self.router_list[0].route_table.show_table()
         for router in self.router_list:
             LOG.info(router.name + ":****************************:")
@@ -93,6 +93,15 @@ class ConfigMenu:
         for host in self.host_list:
             LOG.info(host.name + ":*****************************:")
             host.route_table.show_table()
+
+    def show_mac_table(self):
+        # self.router_list[0].route_table.show_table()
+        for router in self.router_list:
+            LOG.info(router.name + ":****************************:")
+            router.arp_mac_table.show_table()
+        for host in self.host_list:
+            LOG.info(host.name + ":*****************************:")
+            host.arp_mac_table.show_table()
 
     def select_servers(self):
         if not len(self.host_list):
@@ -120,7 +129,8 @@ if __name__ == "__main__":
     options = [{"name": "Create Router", "function": conf.create_and_set_number_device},
                {"name": "Config Host IP", "function": conf.config_host_ip},
                {"name": "config Router IP", "function": conf.config_router_ip},
-               {"name": "Show Routing Table", "function": conf.show_table},
+               {"name": "Show Routing Table", "function": conf.show_routing_table},
+               {"name": "Show MAC/ARP Table", "function": conf.show_mac_table},
                {"name": "Select Servers", "function": conf.select_servers},
                {"name": "Open Chat Window", "function": conf.start_chat_window}]
 

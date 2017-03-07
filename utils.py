@@ -1,22 +1,43 @@
-import time as t
-
-class Timer:
-    def __enter__(self):
-        self.begin = t.time()
-        return self
-
-    def __exit__(self, *args):
-        self.duration = t.time() - self.begin
+from threading import Timer
 
 
-'''
-Return the checksum of the given data.
-The algorithm comes from:
-http://en.wikipedia.org/wiki/IPv4_header_checksum
-'''
+class DeleteEntryTimer(object):
+    def __init__(self, interval, f, *args, **kwargs):
+        self.interval = interval
+        self.f = f
+        self.args = args
+        self.kwargs = kwargs
+
+        self.timer = None
+
+    def callable(self):
+        self.f(*self.args, **self.kwargs)
+
+    def cancel(self):
+        self.timer.cancel()
+
+    def start(self):
+        self.timer = Timer(self.interval, self.callable)
+        self.timer.start()
+
+    def reset(self):
+        self.cancel()
+        self.start()
+
+
+def delete_entry(table_list, index):
+    print table_list[index]
+    table_list.remove(table_list[index])
+    print table_list
 
 
 def checksum(data):
+    '''
+    Return the checksum of the given data.
+    The algorithm comes from:
+    http://en.wikipedia.org/wiki/IPv4_header_checksum
+    '''
+
     data_sum = 0
     # pick up 16 bits (2 WORDs) every time
     for i in range(0, len(data), 2):
