@@ -42,8 +42,7 @@ class ServerSocketSimulator:
         self.fin_queue = multiprocessing.Queue()
         self.receiving_tcp = threading.Thread(target=self.receive_tcp)
         self.receiving_tcp.start()
-        self.listening_down = threading.Thread(target=self.listen_tear_down)
-        self.listening_down.start()
+
 
     def receive_tcp(self):
         while True:
@@ -63,6 +62,8 @@ class ServerSocketSimulator:
         self._tcp_handshake(tcp_segment)
         print "........server........%s has connected with %s........." %\
               (self.host.name, socket.inet_ntoa(self.ip_dest))
+        listening_down = threading.Thread(target=self.listen_tear_down)
+        listening_down.start()
 
     def listen_tear_down(self):
         '''
@@ -71,6 +72,7 @@ class ServerSocketSimulator:
         while True:
             # 3-way handshake
             tcp_segment = self.recv_non_psh(self.fin_queue)
+            self.port_dest = tcp_segment.tcp_src_port
             self._tcp_response_tear_down(tcp_segment)
             self.close()
             print "........server........%s has disconnected with %s........." %\
@@ -174,6 +176,12 @@ class ServerSocketSimulator:
         Tear down the raw socket connection
         '''
         # self.socket.close() remove the host
+        while not self.ack_queue.empty():
+            self.ack_queue.get()
+        while not self.fin_queue.empty():
+            self.fin_queue.get()
+        while not self.syn_queue.empty():
+            self.syn_queue.get()
         self.host.chat_window.current_socket = None
 
     def _tcp_handshake(self, tcp_segment):
@@ -211,7 +219,7 @@ class ServerSocketSimulator:
                                      tcp_adwind=self.tcp_cwind, data=data)
 
             ip_data = tcp_segment.pack()
-            print self.host.name + ":*******server******send TCP************" + tcp_segment.__repr__()
+            print self.host.name + ": server send TCP: " + tcp_segment.__repr__()
             # build IP datagram
             ip_datagram = IPDatagram(ip_src_addr=self.ip_src,
                                      ip_dest_addr=self.ip_dest,
@@ -256,7 +264,7 @@ class ServerSocketSimulator:
                 #     return self._retry(bufsize, max_retry)
                 LOG.debug('Recv: %s' % tcp_segment)
                 self.metrics['erecv'] += 1
-                print self.host.name + "_tcp_expected==server====recv========" + tcp_segment.__repr__()
+                print self.host.name + "Server Receive TCP: " + tcp_segment.__repr__()
                 return tcp_segment
             # timeout, re-_send and re-_recv
             except Empty:

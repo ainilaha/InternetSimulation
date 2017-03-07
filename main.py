@@ -1,20 +1,18 @@
 import menu
 import struct
 
-from arp_mac_table import ARPnMACTable
 from chat_window import ChatWindowCreator
-from ethernet import EthernetFrame
 from host_simulator import HostSimulator
 from ip import IPDatagram
 from logger import LOG
 from router_simulator import RouterSimulator
-from routing_table import RoutingRow
 
 
 class ConfigMenu:
     def __init__(self):
         self.router_list = []
         self.host_list = []
+        self.chat_win = ChatWindowCreator()
 
     def create_routers_and_host(self, router_number=5):
         i = 1
@@ -50,7 +48,10 @@ class ConfigMenu:
         print "Router config menu \n"
 
     def config_router_ip(self):
-        value = raw_input("Input Router Number(1 to 5):")
+        if not len(self.host_list):
+            LOG.warning("Please create routers and host first!!")
+            return
+        value = raw_input("Input Router Number(1 to %d):" % len(self.router_list))
         print "Router Number is:" + value
         router = self.router_list[int(value) - 1]
         i = 0
@@ -68,7 +69,10 @@ class ConfigMenu:
         router.arp_mac_table.show_table()
 
     def config_host_ip(self):
-        value = raw_input("Input host Number(1 to %d):" % len(self.router_list))
+        if not len(self.host_list):
+            LOG.warning("Please create routers and host first!!")
+            return
+        value = raw_input("Input host Number(1 to %d):" % len(self.host_list))
         print "Host Number is:" + value
         host_simulator = self.host_list[int(value) - 1]
         ip = raw_input("Input IP address of host:")
@@ -81,14 +85,6 @@ class ConfigMenu:
         else:
             LOG.info("%s is an empty or illegal ip address!" % ip)
 
-    def create_test_frame(self):
-        src_ip = struct.pack('4B', 192, 168, 1, 5)
-        des_ip = struct.pack('4B', 102, 102, 102, 5)
-        ip_data = IPDatagram(src_ip, des_ip, data="hello world")
-
-        return ip_data.pack()
-
-
     def show_table(self):
         # self.router_list[0].route_table.show_table()
         for router in self.router_list:
@@ -98,22 +94,24 @@ class ConfigMenu:
             LOG.info(host.name + ":*****************************:")
             host.route_table.show_table()
 
-    def test_send(self):
-        eth = self.create_test_frame()
-        self.host_list[0].send_datagram(eth)
+    def select_servers(self):
+        if not len(self.host_list):
+            LOG.warning("Please create routers and host first!!")
+            return
+        values = raw_input("select hosts as server Number(1 to %d), split as \',\' if more than one:" %
+                          len(self.host_list))
+        values = str(values).strip().split(",")
+        for value in values:
+            self.chat_win.server_indexes.append(int(value)-1)
 
     def start_chat_window(self):
         print "--------------start_chat_window-----------"
-        chat_win = ChatWindowCreator()
-        chat_win.host_list = self.host_list
-        chat_win.new_window()
-        chat_win.mainloop()
+        self.chat_win.host_list = self.host_list
+        self.chat_win.new_window()
+        self.chat_win.mainloop()
         for win_host in self.host_list:
             win_host.chat_window.server_accept.join()
             win_host.chat_window.current_socket.receiving_tcp.join()
-
-
-
 
 if __name__ == "__main__":
     conf = ConfigMenu()
@@ -123,7 +121,7 @@ if __name__ == "__main__":
                {"name": "Config Host IP", "function": conf.config_host_ip},
                {"name": "config Router IP", "function": conf.config_router_ip},
                {"name": "Show Routing Table", "function": conf.show_table},
-               {"name": "test_send", "function": conf.test_send},
+               {"name": "Select Servers", "function": conf.select_servers},
                {"name": "Open Chat Window", "function": conf.start_chat_window}]
 
     mainMenu.addOptions(options)

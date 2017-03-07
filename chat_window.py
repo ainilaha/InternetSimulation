@@ -11,8 +11,8 @@ from functools import partial
 
 
 class ChatWindow(InternetChatDialog):
-    def __init__(self, name, master=None, host=None):
-        InternetChatDialog.__init__(self, name, master=master, host=host)
+    def __init__(self, name, master=None, host=None, is_server=False):
+        InternetChatDialog.__init__(self, name, master=master, host=host, is_server=is_server)
         self.send_msg["command"] = self.send_message
         self.host_list = []
 
@@ -27,24 +27,41 @@ class ChatWindow(InternetChatDialog):
         else:
             LOG.warning("There is no socket connected!")
 
+    def show_ip(self):
+        ip = self.host.intList[0].ip_addr
+        message = "local IP: %s \n" % str(ip)
+        self.message_queue.put(message)
+        LOG.info(message)
+
     def enter_keys(self, event):
         self.send_message()
 
     @staticmethod
-    def create_chat_window(local_host, host_list):
+    def create_chat_window(local_host, host_list, server_indexes):
         root = Tk()
-        app = ChatWindow(local_host.name, master=root, host=local_host)
+        is_server = False
+        if host_list.index(local_host) in server_indexes:
+            is_server = True
+        else:
+            is_server = False
+        app = ChatWindow(local_host.name, master=root, host=local_host,is_server=is_server)
         app.host_list = host_list
         app.host = local_host
         app.inputText.bind("<Return>", app.enter_keys)
         menu = Menu(root)
         root.config(menu=menu)
         hosts = Menu(menu)
-        menu.add_cascade(label="Hosts", menu=hosts)
-        for host in host_list:
-            if host != local_host:
-                action_with_arg = partial(app.set_target_ip, host.intList[0].ip_addr)
-                hosts.add_command(label=host.name, command=action_with_arg)
+        if host_list.index(local_host) in server_indexes:
+            menu.add_cascade(label="SERVER", menu=hosts)
+            hosts.add_command(label="Show IP", command=app.show_ip)
+            app.server_accept.start()
+        else:
+            menu.add_cascade(label="Hosts", menu=hosts)
+            hosts.add_command(label="Show IP", command=app.show_ip)
+            for host in host_list:
+                if host != local_host and host_list.index(host) in server_indexes:
+                    action_with_arg = partial(app.set_target_ip, host)
+                    hosts.add_command(label="Connect to:" + host.name, command=action_with_arg)
 
         root.title(app.name)
         # root.mainloop()
@@ -58,33 +75,18 @@ class ChatWindowCreator(Frame):
     def __init__(self):
         tK.Frame.__init__(self)
         self.host_list = []
+        self.server_indexes = []
         self.pack()
         self.master.title("ChatWindowCreator")
         # self.button1 = tK.Button(self, text="Close", command=self.quit)
         # self.button1.pack()
 
     def new_window(self):
-        server = False
         for host_simulator in self.host_list:
-            win_chat = ChatWindow.create_chat_window(host_simulator, self.host_list)
+            win_chat = ChatWindow.create_chat_window(host_simulator, self.host_list,self.server_indexes)
             host_simulator.chat_window = win_chat
-            if server:
-                win_chat.server_accept.start()
-                server = False
-            else:
-                server = True
-
-
-def put_message_queue(queue, message):
-    ip = struct.pack('4B', 101, 104, 10, 10)
-    print "-------------------ip_data---b-----------------"
-    ip_data = IPDatagram(ip, ip, data=str(message))
-    print "-------------------ip_data---a-----------------"
-    print ip_data.__repr__()
-    message = ip_data.pack()
-    print message
-    queue.put(message)
-    # sleep(0.001)  # Besides, the time needed to route packets from one node to another should not be zero.
+            # if self.host_list.index(host_simulator) in self.server_indexes:
+            #     win_chat.server_accept.start()
 
 
 if __name__ == "__main__":

@@ -104,7 +104,7 @@ class HostSimulator:
         match_row = self.route_table.find_shortest_path(dest_ip)
         if match_row:
             if IPAddress(self.intList[0].ip_addr) == IPAddress(match_row.inter_ip):
-                LOG.info("matched interface=" + self.intList[0].name)
+                LOG.debug("matched interface=" + self.intList[0].name)
                 src_mac = ARPnMACTable.get_mac_pack(self.intList[0].mac)
                 ip_frame = EthernetFrame(src_mac, src_mac, tcode=0x0800, data=ip_packets)
                 LOG.info(self.name + " :from send_datagram: " + ip_frame.__repr__())

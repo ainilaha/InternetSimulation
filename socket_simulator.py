@@ -7,6 +7,8 @@ from collections import Counter
 
 import time
 
+import gc
+
 from ip import IPDatagram
 from logger import LOG
 from tcp import TCPSegment
@@ -87,7 +89,6 @@ class SocketSimulator:
                 tcp_segment = self._recv(self.max_retry)
                 if tcp_segment is None:
                     raise RuntimeError('Connection timeout')
-                print self.host.name + ": ------------client--recv-----------------------tcp_segment" + tcp_segment.__repr__()
                 if not tcp_segment.tcp_fpsh:
                     if tcp_segment.tcp_fack:
                         self.ack_queue.put(tcp_segment)
@@ -131,7 +132,11 @@ class SocketSimulator:
         Tear down the raw socket connection
         '''
         self._tcp_teardown()
-        # self.socket.close() remove the host
+        # clear all queues
+        while not self.ack_queue.empty():
+            self.ack_queue.get()
+        while not self.fin_queue.empty():
+            self.fin_queue.get()
         self.host.chat_window.current_socket = None
 
     def _tcp_handshake(self):
@@ -172,7 +177,7 @@ class SocketSimulator:
                                      tcp_frst=rst, tcp_fsyn=syn, tcp_ffin=fin,
                                      tcp_adwind=self.tcp_cwind, data=data)
             ip_data = tcp_segment.pack()
-            print self.host.name + ":*****client********send TCP************" + tcp_segment.__repr__()
+            print self.host.name + ":client send TCP: " + tcp_segment.__repr__()
             # build IP datagram
             ip_datagram = IPDatagram(ip_src_addr=self.ip_src,
                                      ip_dest_addr=self.ip_dest,
@@ -208,7 +213,7 @@ class SocketSimulator:
                 tcp_segment = TCPSegment(self.ip_src, self.ip_dest)
                 tcp_segment.unpack(ip_data)
                 tcp_segment.pack()
-                print self.host.name + "tcp=======client===recv====" + tcp_segment.__repr__()
+                print self.host.name + ": client receive TCP: " + tcp_segment.__repr__()
                 # TCP filtering
                 if not self._tcp_expected(tcp_segment):
                     continue
@@ -218,15 +223,14 @@ class SocketSimulator:
                 #     return self._retry(bufsize, max_retry)
                 LOG.debug('Recv: %s' % tcp_segment)
                 self.metrics['erecv'] += 1
-                print self.host.name + "tcp=======client===recv=2===" + tcp_segment.__repr__()
                 return tcp_segment
             # timeout, re-_send and re-_recv
             except Empty:
                 return self._retry(bufsize, max_retry)
         return None
 
-    def recv_non_psh(self,queue):
-        time.sleep(0.01)
+    def recv_non_psh(self, queue):
+        time.sleep(0.1)
         while True:
             try:
                 tcp_segment = queue.get(0)
@@ -295,7 +299,6 @@ class SocketSimulator:
         3. raise error if server resets the connection
         4. checksum must be valid
         '''
-        print "-----port_dest=%d--------------self.port_src=%d----------------------------------" % (self.port_dest,self.port_src)
         if tcp_segment.tcp_src_port != self.port_dest:
             return False
         elif tcp_segment.tcp_dest_port != self.port_src:
