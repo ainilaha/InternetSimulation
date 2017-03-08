@@ -1,6 +1,10 @@
-This application is an Internet simulation via python. Routers and physics transfer medias are simulated by process.
+This application is an Internet simulation in python. It is included simulator of interfaces, hosts , routers and raw 
+protocols such as ARP,RIP,IP, and TCP. Routers and physics transfer medias are simulated by process.
 The rest of features are pretty close to real network protocols. However, I have to revise some protocol on link layer
-so that I it can run on top of the simulated virtual systems.
+so that I it can run on top of the simulated virtual systems. The principle of network has been remained.
+
+Note: Many details have been ignored due to time and effort, such as I have added fresh and expire on routing table but 
+not on mac table. I have wrap TCP sockets but not for UDP since here my UDP is just for send RIP packets.
 
 This simulation run on top of python2.7 and using python structs lib serialize packets and frame
 
@@ -25,6 +29,17 @@ python main.py
 >>> 1   # eg, choose 1 to creat routers and hosts
 
 `````
+**Process of the System**
+`````
+It will try to build a TCP connection with target server once we click the "connect to host.x" from a client simulator.
+The socket simulators will wrap a TCP segments, IP packets and put it to interfaces then it will encapsulated as frame to
+send to next hop. In order to send the frame to next hop it will check shortest path on routing table and the learning
+Mac address before send it.
+
+Simulated RIP and ARP will run as daemon thread constantly and update the routing table and the mac/arp tables.
+
+`````
+
 
 **Interface:**
 

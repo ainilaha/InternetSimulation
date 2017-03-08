@@ -66,6 +66,7 @@ class SocketSimulator:
         send_length = 0
         total_len = len(data)
         while send_length < total_len:
+            self.tcp_cwind += 1/self.tcp_cwind
             self._send(data[send_length:(send_length + self.tcp_cwind)], ack=1, psh=1)
             # update TCP seq
             if (send_length + self.tcp_cwind) > total_len:
@@ -164,6 +165,7 @@ class SocketSimulator:
         '''
 
         if retry:
+            self.tcp_cwind /= 2
             return self.host.send_datagram(self.prev_data)
         else:
             # build TCP segment

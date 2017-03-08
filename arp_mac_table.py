@@ -31,6 +31,7 @@ Total Mac Addresses for this criterion: 2
 
 '''
 
+
 # dynamic mac row should be expire 5 minutes
 
 
@@ -56,10 +57,10 @@ class ARPnMACTable:
 
     @staticmethod
     def match_mac(src_mac, dest_mac):
-            if EUI(dest_mac) == EUI(src_mac) or EUI(dest_mac) == EUI("FF-FF-FF-FF-FF-FF"):
-                return True
-            else:
-                return False
+        if EUI(dest_mac) == EUI(src_mac) or EUI(dest_mac) == EUI("FF-FF-FF-FF-FF-FF"):
+            return True
+        else:
+            return False
 
     def get_mac_from_table(self, dest_ip):
         # dest_ip = str(socket.inet_ntoa(dest_ip))
@@ -74,7 +75,7 @@ class ARPnMACTable:
         mac_row = ARPnMACRow(ip_addr=str(socket.inet_ntoa(dest_ip)), mac=str(EUI(mac)),
                              inter_name=inter_name, mac_type=0, age=5)
         self.mac_table.append(mac_row)
-        #self.show_table()
+        # self.show_table()
 
     @staticmethod
     def get_mac_pack(mac):
@@ -108,6 +109,7 @@ class ARPnMACTable:
                                      inter_name=line[2].strip(), age=int(line[4].strip()))
                 self.mac_table.append(mac_row)
 
+
 if __name__ == "__main__":
     print type(EUI("00-1B-77-49-54-FD").bin)
     mt = ARPnMACTable()
@@ -121,4 +123,3 @@ if __name__ == "__main__":
     mt.mac_table.append(mr2)
     mt.mac_table.append(mr3)
     mt.show_table()
-
