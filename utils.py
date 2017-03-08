@@ -2,16 +2,16 @@ from threading import Timer
 
 
 class DeleteEntryTimer(object):
-    def __init__(self, interval, f, *args, **kwargs):
+    def __init__(self, interval, f, entry_list, entry):
         self.interval = interval
         self.f = f
-        self.args = args
-        self.kwargs = kwargs
+        self.entry_list = entry_list
+        self.entry = entry
 
         self.timer = None
 
     def callable(self):
-        self.f(*self.args, **self.kwargs)
+        self.f(self.entry_list, self.entry)
 
     def cancel(self):
         self.timer.cancel()
@@ -25,10 +25,14 @@ class DeleteEntryTimer(object):
         self.start()
 
 
-def delete_entry(table_list, index):
-    print table_list[index]
-    table_list.remove(table_list[index])
-    print table_list
+def delete_entry(table_list, entry):
+    table_list.remove(entry)
+
+
+def entry_time_reset(timer_list, entry):
+    for timer in timer_list:
+        if timer.entry == entry:
+            timer.reset()
 
 
 def checksum(data):

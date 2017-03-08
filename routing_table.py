@@ -20,6 +20,7 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from logger import LOG
+from utils import delete_entry, DeleteEntryTimer, entry_time_reset
 
 ENTRY_EXPIRE_TIME = 30*60  # 30 minutes
 
@@ -58,11 +59,15 @@ class RoutingTable:
     def update_table(self, route_row):
         if route_row.__repr__() in [route_row_exist.__repr__() for route_row_exist in self.table]:
             LOG.debug("re-setting time+++++++++++++++++++++++++++++++++++++++++++++++++++++" + route_row.__repr__())
+            entry_time_reset(self.timer_list, route_row)
         # discard the entry if destination address equal to local address to prevent routing loop
         # elif route_row.dest_ip not in [inter.ip_addr for inter in self.router.intList]:
         else:
             route_row.metric += 1
             self.table.append(route_row)
+            entry_timer = DeleteEntryTimer(ENTRY_EXPIRE_TIME, delete_entry, self.table, route_row)
+            entry_timer.start()
+            self.timer_list.append(entry_timer)
             # self.show_table()
 
     def init_update_row(self, other_router, inter):
