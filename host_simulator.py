@@ -47,8 +47,6 @@ class HostSimulator:
         interface.type = 1
         self.intList.append(interface)
         self.load_config()
-        # self.teeest = threading.Thread(target=self.test_recv)
-        # self.teeest.start()
 
     def test_recv(self):
         try:

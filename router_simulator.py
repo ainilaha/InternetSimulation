@@ -40,7 +40,7 @@ class RouterSimulator:
         self.received_frame_data_queue = multiprocessing.Queue()
         self.receive = threading.Thread(target=self.receive_frame)
         self.receive.start()
-        self.routing_packets = threading.Thread(target=self.route_ip_datagram)
+        self.routing_packets = threading.Thread(target=self.route_ip_datagram)  # forwarding IP packets
         self.routing_packets.start()
         self.rip_simulator = RIPSimulator(self)
 
