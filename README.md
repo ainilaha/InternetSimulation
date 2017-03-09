@@ -1,12 +1,14 @@
 This application is a model of raw internet and it implemented in python.
 It is included simulator of interfaces, hosts , routers and raw  protocols such as ARP,RIP,IP, and TCP. 
 Routers and physics transfer medias are simulated by process.
-The rest of features are pretty close to real network protocols. However, I have to revise some protocol on link layer
-so that I it can run on top of the simulated virtual systems. The principle of network has been remained.
+The rest of features are pretty close to real network protocols. However, I have to revise some protocols 
+on link layer so that I it can run on top of the simulated virtual systems. 
+The principle of network has been remained.
 Please refer simulators of  models and processes from readme.pptx.
 
-Note: Many details have been ignored due to time and effort, such as I have added fresh and expire on routing table but 
-not on mac table. I have wrap TCP sockets but not for UDP since here my UDP is just for send RIP packets. 
+Note: Many details have been ignored due to time and effort, such as I have added fresh and 
+expire on routing table but not on mac table. I have wrap TCP sockets but not for UDP since
+my UDP is just for send RIP packets. 
 All IP addresses are set as C class addresses. 
 
 This simulation run on top of python2.7 and using python structs lib serialize packets and frame
