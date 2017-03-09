@@ -127,7 +127,7 @@ class HostSimulator:
                         " : " + self.intList[0].mac + os.linesep)
         conf_file.close()
         self.init_arp_mac_table()
-        self.arp_mac_table.save_table(self.arp_mac_table_path)
+        self.arp_mac_tableve.sa_table(self.arp_mac_table_path)
 
     def load_config(self):
         if os.path.exists(str(self.config_file_path)):
