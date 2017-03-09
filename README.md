@@ -16,6 +16,7 @@ This simulation run on top of python2.7 and using python structs lib serialize p
 `````
     - sudo apt-get install python-tk # tk gui to draw chat window, no needed install Windows OS
     - pip install menu  # install text menu
+    - pip install Enum  # install enumerate class
     - pip install netaddr # to manipulation ip and mac address
 `````
 2. run and command
